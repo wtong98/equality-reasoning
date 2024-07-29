@@ -16,7 +16,6 @@ import seaborn as sns
 from tqdm import tqdm
 
 import sys
-sys.path.append('../../../')
 sys.path.append('../../../../')
 from common import *
 from model.mlp import MlpConfig, RfConfig
@@ -519,7 +518,9 @@ g = sns.lineplot(plot_df, x='n_dims', y='neg_log_acc_unseen', hue='n_symbols', m
 
 ds = np.unique(plot_df['n_dims'].to_numpy())
 ds = ds.astype('float')
-plt.plot(ds, 0.0001 * ds**(2))
+plt.plot(ds, 0.0022 * ds**(1))
+plt.plot(ds, 0.0007 * ds**(1.5))
+plt.plot(ds, 0.00015 * ds**(2))
 plt.axhline(y=-np.log(0.5))
 
 g.set_yscale('log')

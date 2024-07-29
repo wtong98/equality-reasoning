@@ -26,6 +26,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
+# from common import t
+
 
 @struct.dataclass
 class TransformerConfig:
@@ -37,7 +39,6 @@ class TransformerConfig:
     n_out: int = 1
     max_len: int = 1024
     pos_emb: bool = True
-    use_single_head_module: bool = False # TODO: stopgap for linear transformer
     use_last_index_output: bool = False
     softmax_att: bool = True
     layer_norm: bool = True
@@ -83,43 +84,6 @@ def sinusoidal_init(max_len=2048,
     return init
 
 
-class SingleHeadSelfAttention(nn.Module):
-    """Single head self attention, with some custom sauce.
-    
-    Args:
-        config: TransformerConfig dataclass with hyperparameters
-    """
-
-    config: TransformerConfig
-
-    @nn.compact
-    def __call__(self, inputs, mask=None, idxs=None, use_bias=False):
-        dense = functools.partial(
-            nn.Dense,
-            features=self.config.n_hidden,
-            use_bias=use_bias)
-        
-        self.sow('intermediates', 'inputs', inputs)
-        query = dense(name='query')(inputs)
-        key = dense(name='key')(inputs)
-        value = dense(name='value')(inputs)
-        depth = query.shape[-1]
-
-        attn_weights = jnp.einsum('...qd,...kd->...qk', query, key)
-        attn_weights /= jnp.sqrt(depth)
-        self.sow('intermediates', 'raw_att', attn_weights)
-
-        if mask is not None:
-            attn_weights = jnp.where(mask.squeeze(), attn_weights, np.iinfo(np.int32).min)
-
-        if self.config.softmax_att:
-            attn_weights = jax.nn.softmax(attn_weights)
-        self.sow('intermediates', 'attention_weights', attn_weights)
-
-        attn_out = attn_weights @ value
-        return attn_out
-
-
 class AddPositionEmbs(nn.Module):
     """Adds (optionally learned) positional embeddings to the inputs.
 
@@ -151,14 +115,6 @@ class AddPositionEmbs(nn.Module):
         pos_embedding = sinusoidal_init(max_len=config.max_len)(None,
                                                                 pos_emb_shape,
                                                                 None)
-
-        # if config.posemb_init is None:
-        #     # Use a fixed (non-learned) sinusoidal position embedding.
-        #     pos_embedding = sinusoidal_init(max_len=config.max_len)(None,
-        #                                                             pos_emb_shape,
-        #                                                             None)
-        # else:
-        #     pos_embedding = self.param('pos_embedding', config.posemb_init, pos_emb_shape)
         
         pe = pos_embedding[:, :length, :]
         return inputs + pe
@@ -170,16 +126,13 @@ class TransformerBlock(nn.Module):
     @nn.compact
     def __call__(self,
                 inputs,
-                decoder_mask=None,
-                idxs=None):
+                decoder_mask=None):
 
         assert inputs.ndim == 3
 
-        if self.config.use_single_head_module:
-            x = SingleHeadSelfAttention(self.config)(inputs, decoder_mask, idxs=idxs)
-        else:
-            x = nn.MultiHeadDotProductAttention(num_heads=self.config.n_heads, 
-                                                qkv_features=self.config.n_hidden)(inputs_q=inputs, inputs_kv=inputs, mask=decoder_mask)
+        # TODO: freeze inputs <-- STOPPED HERE
+        x = nn.MultiHeadDotProductAttention(num_heads=self.config.n_heads, 
+                                            qkv_features=self.config.n_hidden)(inputs_q=inputs, inputs_kv=inputs, mask=decoder_mask)
         x = x + inputs
 
         if self.config.layer_norm:
@@ -201,26 +154,6 @@ class TransformerBlock(nn.Module):
 
         return x
 
-def t(xs):
-    return np.swapaxes(xs, -2, -1)
-
-class PureLinearSelfAttentionBlock(nn.Module):
-    
-    @nn.compact
-    def __call__(self, inputs):
-        # att = jnp.einsum('...qd,...kd->...qk', inputs, inputs)
-        # return att.reshape(inputs.shape[0], 1, -1)
-        depth = inputs.shape[2]
-
-        Z = inputs
-        V = self.param('V', nn.initializers.lecun_normal(), (depth, depth))
-        W = self.param('W', nn.initializers.lecun_normal(), (depth, depth))
-        out = V @ t(Z) @ Z @ W @ t(Z)
-
-        return t(out)
-
-
-
 
 class Transformer(nn.Module):
 
@@ -233,33 +166,30 @@ class Transformer(nn.Module):
 
         y = inputs
 
-        if config.pure_linear_self_att:
-            y = PureLinearSelfAttentionBlock()(y)
+        # Target Embedding
+        if config.n_emb is not None:
+            assert inputs.ndim == 2  # (batch, len)
+
+            y = nn.Embed(
+                    num_embeddings=config.vocab_size,
+                    features=config.n_emb)(y)
         else:
-            # Target Embedding
-            if config.n_emb is not None:
-                assert inputs.ndim == 2  # (batch, len)
+            y = nn.Dense(features=config.n_hidden)(y)  # project to correct hidden dim
 
-                y = nn.Embed(
-                        num_embeddings=config.vocab_size,
-                        features=config.n_emb)(y)
-            else:
-                y = nn.Dense(features=config.n_hidden)(y)  # project to correct hidden dim
-
-            if config.pos_emb:
-                y = AddPositionEmbs(config=config)(y)
-            
-            # decoder_mask = nn.make_attention_mask(inputs > 0, inputs > 0)
-            # decoder_mask = nn.combine_masks(
-            #     decoder_mask,
-            #     nn.make_causal_mask(inputs))
-            decoder_mask = nn.make_causal_mask(jnp.zeros(inputs.shape[:2]))
-            
-            for _ in range(config.n_layers):
-                y = TransformerBlock(
-                    config=config)(
-                            y,
-                            decoder_mask=decoder_mask)
+        if config.pos_emb:
+            y = AddPositionEmbs(config=config)(y)
+        
+        # decoder_mask = nn.make_attention_mask(inputs > 0, inputs > 0)
+        # decoder_mask = nn.combine_masks(
+        #     decoder_mask,
+        #     nn.make_causal_mask(inputs))
+        decoder_mask = nn.make_causal_mask(jnp.zeros(inputs.shape[:2]))
+        
+        for _ in range(config.n_layers):
+            y = TransformerBlock(
+                config=config)(
+                        y,
+                        decoder_mask=decoder_mask)
         
         if config.use_last_index_output:
             return y[:,-1,-1]

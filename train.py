@@ -13,14 +13,8 @@ import optax
 from flax import struct
 from flax.training import train_state
 
-from task.function import MultiplicationTask, DotProductTask
-from task.match import RingMatch, LabelRingMatch
-from task.oddball import FreeOddballTask, LineOddballTask
-from task.ti import TiTask
-
+from task.match import RingMatch 
 from model.mlp import MlpConfig
-from model.transformer import TransformerConfig
-from model.poly import PolyConfig
 
 
 def new_seed(): return np.random.randint(1, np.iinfo(np.int32).max)

@@ -10,7 +10,7 @@ import sys
 sys.path.append('../../../')
 sys.path.append('../../../../')
 from common import *
-from model.mlp import MlpConfig, RfConfig
+from model.mlp import RfConfig
 from task.function import SameDifferent
 
 run_id = new_seed()
@@ -19,14 +19,12 @@ print('RUN ID', run_id)
 run_split = 1
 
 train_iters_std = 50_000
-# n_vocab = [16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
-# n_dims = [2, 4, 8, 16, 32, 64, 128]
 
-n_dims = (2**(np.linspace(2, 6, num=12))).astype(int)
-n_vocab = [128, 256, 512, 1024, 2048, 4096, 8192]
+n_dims = (2**(np.linspace(3.5, 6, num=12))).astype(int)
+n_vocab = [128, 256, 512, 1024, 2048, 4096, 8192, 16_000, 32_000]
 
 n_layers = 1
-n_hidden = 512
+n_hidden = 2048
 
 ### START TEST CONFIGS
 # train_iters_std = 5000
