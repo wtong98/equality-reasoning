@@ -294,31 +294,6 @@ grads2
 # print(loss_fn2(p2))
 # print(loss_fn(p1))
 
-# def loss_fn(params):
-#     logits = state.apply_fn({'params': params}, x)
-#     train_loss = loss_func(logits, labels)
-
-#     if loss == 'bce' and len(labels.shape) > 1:
-#         assert logits.shape == train_loss.shape
-#         train_loss = train_loss.mean(axis=-1)
-
-#     assert len(train_loss.shape) == 1
-
-#     l1_term = l1_weight * l1_loss(params)
-
-#     if gamma is not None:
-#         logits = jax.lax.stop_gradient(logits)
-#         num_pre = labels - (1 - labels) * jnp.exp((1 / gamma) * logits)
-#         den_pre = labels - (1 - labels) * jnp.exp(logits)
-#         factors = (1 + jnp.exp(logits)) / (1 + jnp.exp((1 / gamma) * logits))
-#         scale_factors = (num_pre / den_pre) * factors
-#         train_loss = scale_factors * train_loss
-
-#     return train_loss.mean() + l1_term
-
-
-
-
 
 # <codecell>
 x, _ = next(sd_task)

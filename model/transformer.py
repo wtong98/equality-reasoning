@@ -18,15 +18,11 @@ limitations under the License.
 """
 
 # <codecell>
-import functools
-
 from flax import linen as nn, struct
 
 import jax
 import jax.numpy as jnp
 import numpy as np
-
-# from common import t
 
 
 @struct.dataclass
@@ -42,9 +38,11 @@ class TransformerConfig:
     use_last_index_output: bool = False
     softmax_att: bool = True
     layer_norm: bool = True
+    residual_connections: bool = True
     n_mlp_layers: int = 2
     return_final_logits_only: bool = True
     pure_linear_self_att: bool = False
+    as_rf_model: bool = False
 
     def to_model(self):
         return Transformer(self)
@@ -130,10 +128,10 @@ class TransformerBlock(nn.Module):
 
         assert inputs.ndim == 3
 
-        # TODO: freeze inputs <-- STOPPED HERE
         x = nn.MultiHeadDotProductAttention(num_heads=self.config.n_heads, 
                                             qkv_features=self.config.n_hidden)(inputs_q=inputs, inputs_kv=inputs, mask=decoder_mask)
-        x = x + inputs
+        if self.config.residual_connections:
+            x = x + inputs
 
         if self.config.layer_norm:
             x = nn.LayerNorm()(x)
@@ -147,7 +145,8 @@ class TransformerBlock(nn.Module):
                     x = nn.gelu(x)
                     x = nn.Dense(features=self.config.n_hidden)(x)
             
-            x = x + pre_mlp_x
+            if self.config.residual_connections:
+                x = x + pre_mlp_x
 
             if self.config.layer_norm:
                 x = nn.LayerNorm()(x)
@@ -163,7 +162,6 @@ class Transformer(nn.Module):
     def __call__(self, inputs):
 
         config = self.config
-
         y = inputs
 
         # Target Embedding
@@ -174,7 +172,8 @@ class Transformer(nn.Module):
                     num_embeddings=config.vocab_size,
                     features=config.n_emb)(y)
         else:
-            y = nn.Dense(features=config.n_hidden)(y)  # project to correct hidden dim
+            name = 'input_mlp_freeze' if self.config.as_rf_model else None
+            y = nn.Dense(features=config.n_hidden, name=name)(y)  # project to correct hidden dim
 
         if config.pos_emb:
             y = AddPositionEmbs(config=config)(y)
@@ -185,11 +184,9 @@ class Transformer(nn.Module):
         #     nn.make_causal_mask(inputs))
         decoder_mask = nn.make_causal_mask(jnp.zeros(inputs.shape[:2]))
         
-        for _ in range(config.n_layers):
-            y = TransformerBlock(
-                config=config)(
-                        y,
-                        decoder_mask=decoder_mask)
+        for i in range(config.n_layers):
+            name = f'transformer_block_{i}_freeze' if self.config.as_rf_model else None
+            y = TransformerBlock(config=config, name=name)(y, decoder_mask=decoder_mask)
         
         if config.use_last_index_output:
             return y[:,-1,-1]

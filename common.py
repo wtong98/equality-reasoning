@@ -1,10 +1,7 @@
 """Common utilities"""
 
-from dataclasses import dataclass, field
-import itertools
 from pathlib import Path
 import shutil
-from typing import Iterable
 
 import jax
 import jax.numpy as jnp
@@ -16,7 +13,6 @@ from tqdm import tqdm
 
 import sys
 sys.path.append('../')
-from train import train, train_step
 
 def set_theme():
     sns.set_theme(style='ticks', font_scale=1.25, rc={
@@ -32,16 +28,6 @@ def new_seed():
 
 def t(xs):
     return np.swapaxes(xs, -2, -1)
-
-
-def get_flops(fn, *args, **kwargs):
-    """Borrowed from flax.nn.tabulate"""
-    e = fn.lower(*args, **kwargs)
-    cost = e.cost_analysis()
-    if cost is None:
-        return 0
-    flops = int(cost['flops']) if 'flops' in cost else 0
-    return flops
 
 
 class Finite:
@@ -62,91 +48,6 @@ class Finite:
 
     def __iter__(self):
         return self
-
-
-@dataclass
-class Case:
-    name: str
-    config: dataclass
-    train_task: Iterable | None = None
-    test_task: Iterable | None = None
-    train_args: dict = field(default_factory=dict)
-    state: list = None
-    hist: list = None
-    info: dict = field(default_factory=dict)
-
-    def run(self):
-        self.state, self.hist = train(self.config, data_iter=self.train_task, test_iter=self.test_task, **self.train_args)
-    
-    def get_flops(self):
-        train_args = self.train_args
-        loss = train_args.get('loss', None)
-        return get_flops(train_step, self.state, next(self.train_task), loss=loss)
-    
-    def eval(self, task, key_name='eval_acc'):
-        xs, ys = next(task)
-        logits = self.state.apply_fn({'params': self.state.params}, xs)
-
-        if len(logits.shape) > 1:
-            preds = logits.argmax(-1)
-        else:
-            preds = (logits > 0).astype(float)
-
-        eval_acc = np.mean(ys == preds)
-        self.info[key_name] = eval_acc
-    
-    def eval_mse(self, task, key_name='eval_mse'):
-        xs, ys = next(task)
-        ys_pred = self.state.apply_fn({'params': self.state.params}, xs)
-        mse = np.mean((ys - ys_pred)**2)
-
-        self.info[key_name] = mse
-
-
-@ dataclass
-class KnnCase:
-    name: str
-    config: dataclass
-    train_task: Iterable | None = None
-    info: dict = field(default_factory=dict)
-
-    def run(self):
-        data_size = self.train_task.data[0].shape[0]
-        self.config.xs = self.train_task.data[0].reshape(data_size, -1)
-        self.config.ys = self.train_task.data[1]
-        self.model = self.config.to_model()
-
-    def eval(self, task, key_name='eval_acc'):
-        xs, ys = next(task)
-        probs = self.model(xs)
-        eval_acc = np.mean(ys == probs.argmax(-1))
-        self.info[key_name] = eval_acc
-
-    def eval_mse(self, task, key_name='eval_mse'):
-        xs, ys = next(task)
-        ys_pred = self.model(xs)
-        mse = np.mean((ys - ys_pred)**2)
-
-        self.info[key_name] = mse
-
-
-def eval_cases(all_cases, eval_task, key_name='eval_acc', use_mse=False, ignore_err=False):
-    try:
-        len(eval_task)
-    except TypeError:
-        eval_task = itertools.repeat(eval_task)
-
-    for c, task in tqdm(zip(all_cases, eval_task), total=len(all_cases)):
-        try:
-            if use_mse:
-                c.eval_mse(task, key_name)
-            else:
-                c.eval(task, key_name)
-        except Exception as e:
-            if ignore_err:
-                continue
-            else:
-                raise e
 
 
 def split_cases(all_cases, run_split):

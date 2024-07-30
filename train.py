@@ -1,42 +1,39 @@
 """
-Model definitions
+Training utilities
 """
 
-# <codecell>
+from dataclasses import dataclass, field
 from functools import partial
+import itertools
+from typing import Iterable
 
+from flax import struct, traverse_util
+from flax.training import train_state
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 import optax
-from flax import struct
-from flax.training import train_state
+from tqdm import tqdm
 
-from task.match import RingMatch 
-from model.mlp import MlpConfig
-
-
-def new_seed(): return np.random.randint(1, np.iinfo(np.int32).max)
+from common import new_seed
 
 
 @struct.dataclass
 class Metrics:
     accuracy: float
     loss: float
-    l1_loss: float
     count: int = 0
 
     @staticmethod
     def empty():
-        return Metrics(accuracy=-1, loss=-1, l1_loss=-1)
+        return Metrics(accuracy=-1, loss=-1)
     
     def merge(self, other):
         total = self.count + 1
         acc = (self.count / total) * self.accuracy + (1 / total) * other.accuracy
         loss = (self.count / total) * self.loss + (1 / total) * other.loss
-        l1_loss = (self.count / total) * self.l1_loss + (1 / total) * other.l1_loss
-        return Metrics(acc, loss, l1_loss, count=total)
+        return Metrics(acc, loss, count=total)
 
 
 class TrainState(train_state.TrainState):
@@ -46,12 +43,17 @@ class TrainState(train_state.TrainState):
 def create_train_state(rng, model, dummy_input, lr=1e-4, optim=optax.adamw, **opt_kwargs):
     params = model.init(rng, dummy_input)['params']
     tx = optim(learning_rate=lr, **opt_kwargs)
-    # tx = optax.sgd(learning_rate=lr, **opt_kwargs)
+
+    tx_with_freeze = optax.multi_transform(
+        {'learn': tx,
+         'freeze': optax.set_to_zero()},
+         traverse_util.path_aware_map(lambda path, _: 'freeze' if np.any([s.endswith('freeze') for s in path]) else 'learn', params)
+    )
 
     return TrainState.create(
         apply_fn=model.apply,
         params=params,
-        tx=tx,
+        tx=tx_with_freeze,
         metrics=Metrics.empty()
     )
 
@@ -67,20 +69,9 @@ def parse_loss_name(loss):
         raise ValueError(f'unrecognized loss name: {loss}')
     return loss_func
 
-# TODO: more robustly signal need for L1 loss
-def l1_loss(params):
-    # sum_params = jax.tree_map(lambda x: jnp.sum(jnp.abs(x)), jax.tree_util.tree_leaves(params))
-    # return jnp.sum(jnp.array(sum_params))
-    loss = 0
-    for name in params:
-        if 'MBlock' in name:
-            z_weights = params[name]['DenseMultiply']['kernel']
-            loss += jnp.sum(jnp.abs(z_weights))
-
-    return loss
 
 @partial(jax.jit, static_argnames=('gamma', 'loss',))
-def train_step(state, batch, gamma=None, loss='bce', l1_weight=0):
+def train_step(state, batch, gamma=None, loss='bce'):
     x, labels = batch
     loss_func = parse_loss_name(loss)
 
@@ -88,24 +79,13 @@ def train_step(state, batch, gamma=None, loss='bce', l1_weight=0):
         logits = state.apply_fn({'params': params}, x)
         train_loss = loss_func(logits, labels)
 
-        # print("EARLY LOGITS", jnp.max(logits).item())
-        # p1 = jax.nn.log_sigmoid(logits)
-        # p2 = jax.nn.log_sigmoid(-logits)
-        # train_loss = -labels * p1 - (1 - labels) * p2
-        
-        # print("P1", p1.min().item())
-        # print("P2", p2.min().item())
-        # print('EARLY LOSS', train_loss.mean().item())
-
         if loss == 'bce' and len(labels.shape) > 1:
             assert logits.shape == train_loss.shape
             train_loss = train_loss.mean(axis=-1)
 
         assert len(train_loss.shape) == 1
 
-        l1_term = l1_weight * l1_loss(params)
-
-        # TODO: numerically unstable
+        # NOTE: numerically unstable
         if gamma is not None:
             logits = jax.lax.stop_gradient(logits)
             log_fac = (1 - labels) * logits * ((1 / gamma) - 1) \
@@ -113,25 +93,9 @@ def train_step(state, batch, gamma=None, loss='bce', l1_weight=0):
                         - jax.nn.softplus((1 / gamma) * logits)
             train_loss = jnp.exp(log_fac + jnp.log(train_loss))
 
-            # print('LOGITS', logits.max().item())
-            # print('SOFT+', jax.nn.softplus(logits).max().item())
-            # print('LOG_FAC', jnp.sum(log_fac).item())
-            # print('LOG LOSS', jnp.sum(jnp.log(train_loss)).item())
-            # print('SUM', jnp.max(log_fac + jnp.log(train_loss)).item())
-            # print('LOSS', train_loss.max().item())
-            # print('---')
-
-        return train_loss.mean() + l1_term
+        return train_loss.mean()
     
     grads = jax.grad(loss_fn)(state.params)
-    # if gamma is not None:
-    #     logits = state.apply_fn({'params': state.params}, x)
-    #     avg_logit = jnp.mean(jnp.abs(logits))
-    #     scale_factor = (1 + jnp.exp(avg_logit)) / (1 + jnp.exp((1 / gamma) * avg_logit))
-    #     # scale_factor = jnp.exp(avg_logit)
-    #     # scale_factor = jnp.clip(scale_factor, a_min=None, a_max=1e20)
-    #     grads = jax.tree.map(lambda g: scale_factor * g, grads)
-
     state = state.apply_gradients(grads=grads)
     return state
 
@@ -142,7 +106,6 @@ def compute_metrics(state, batch, loss='bce'):
     logits = state.apply_fn({'params': state.params}, x)
     loss_func=parse_loss_name(loss)
     loss = loss_func(logits, labels).mean()
-    l1 = l1_loss(state.params)
 
     if len(logits.shape) == 1:
         preds = logits > 0
@@ -154,7 +117,7 @@ def compute_metrics(state, batch, loss='bce'):
     
     acc = jnp.mean(preds == labels)
 
-    metrics = Metrics(accuracy=acc, loss=loss, l1_loss=l1)
+    metrics = Metrics(accuracy=acc, loss=loss)
     metrics = state.metrics.merge(metrics)
     state = state.replace(metrics=metrics)
     return state
@@ -167,7 +130,8 @@ def train(config, data_iter,
           early_stop_n=None, early_stop_key='loss', early_stop_decision='min' ,
           optim=optax.adamw,
           seed=None, 
-          l1_weight=0, **opt_kwargs):
+          **opt_kwargs):
+
     if seed is None:
         seed = new_seed()
     
@@ -187,7 +151,7 @@ def train(config, data_iter,
     }
 
     for step, batch in zip(range(train_iters), data_iter):
-        state = train_step(state, batch, loss=loss, l1_weight=l1_weight, gamma=gamma)
+        state = train_step(state, batch, loss=loss, gamma=gamma)
         state = compute_metrics(state, batch, loss=loss)
 
         if ((step + 1) % test_every == 0) or ((step + 1) == train_iters):
@@ -219,58 +183,69 @@ def _print_status(step, hist):
     print(f'ITER {step}:  train_loss={hist["train"][-1].loss:.4f}   train_acc={hist["train"][-1].accuracy:.4f}   test_acc={hist["test"][-1].accuracy:.4f}')
 
 
-if __name__ == '__main__':
-    # domain = -3, 3
-    # task = DotProductTask(domain, n_dims=5, n_args=3, batch_size=256)
-    n_choices = 6
-    # task = FreeOddballTask(n_choices=n_choices, one_hot=True)
-    # task = LineOddballTask(n_choices=n_choices, linear_dist=10)
-    task = RingMatch(n_points=n_choices)
+@dataclass
+class Case:
+    name: str
+    config: dataclass
+    train_task: Iterable | None = None
+    test_task: Iterable | None = None
+    train_args: dict = field(default_factory=dict)
+    state: list = None
+    hist: list = None
+    info: dict = field(default_factory=dict)
 
-    # config = TransformerConfig(pos_emb=True, n_emb=None, n_out=6, n_layers=3, n_hidden=128, use_mlp_layers=True, pure_linear_self_att=False)
-    config = MlpConfig(n_out=n_choices, n_layers=3, n_hidden=512)
-
-    # config = PolyConfig(n_hidden=512, n_layers=1, n_out=n_choices, disable_signage=False)
-    state, hist = train(config, data_iter=iter(task), loss='ce', test_every=1000, train_iters=50_000, early_stop_n=3, early_stop_decision='max', early_stop_key='accuracy', lr=1e-4, l1_weight=1e-4)
-
-    """Observations: transformer performs handsomely, with great sample efficiency. Then
-    MLP, then MNN performs the worst (but still reasonably well)""" # TODO: solidify <-- STOPPED HERE
-
-    # <codecell>
-    loss = [m.loss for m in hist['test']]
-    l1_loss = [m.l1_loss for m in hist['test']]
-    p1 = plt.plot(loss, label='Data loss')[0]
-    plt.yscale('log')
-    plt.xlabel('Time (x1000 batches)')
-
-    ax = plt.gca().twinx()
-    p2 = ax.plot(l1_loss, color='C1', label='L1 loss')[0]
-
-    ax.set_yscale('log')
-
-    plt.legend(handles=[p1, p2], loc='center right')
-
-    ax = plt.gca()
-    ax.spines['left'].set_color('C0')
-    ax.spines['right'].set_color('C1')
+    def run(self):
+        self.state, self.hist = train(self.config, data_iter=self.train_task, test_iter=self.test_task, **self.train_args)
     
-    plt.tight_layout()
-    # plt.savefig('experiment/fig/loss.png')
+    def get_flops(self):
+        train_args = self.train_args
+        loss = train_args.get('loss', None)
+        return get_flops(train_step, self.state, next(self.train_task), loss=loss)
+    
+    def eval(self, task, key_name='eval_acc'):
+        xs, ys = next(task)
+        logits = self.state.apply_fn({'params': self.state.params}, xs)
+
+        if len(logits.shape) > 1:
+            preds = logits.argmax(-1)
+        else:
+            preds = (logits > 0).astype(float)
+
+        eval_acc = np.mean(ys == preds)
+        self.info[key_name] = eval_acc
+    
+    def eval_mse(self, task, key_name='eval_mse'):
+        xs, ys = next(task)
+        ys_pred = self.state.apply_fn({'params': self.state.params}, xs)
+        mse = np.mean((ys - ys_pred)**2)
+
+        self.info[key_name] = mse
 
 
-    # %%
-    state.apply_fn({'params': state.params}, jnp.array([[0.5, 0.5]]), mutable='intm')
+def eval_cases(all_cases, eval_task, key_name='eval_acc', use_mse=False, ignore_err=False):
+    try:
+        len(eval_task)
+    except TypeError:
+        eval_task = itertools.repeat(eval_task)
 
-    # %%
-    x = np.linspace(-4, 4, 50)
-    xs = np.stack((x, -x), axis=-1)
+    for c, task in tqdm(zip(all_cases, eval_task), total=len(all_cases)):
+        try:
+            if use_mse:
+                c.eval_mse(task, key_name)
+            else:
+                c.eval(task, key_name)
+        except Exception as e:
+            if ignore_err:
+                continue
+            else:
+                raise e
 
-    out = state.apply_fn({'params': state.params}, xs)
 
-    plt.plot(x, -x**2)
-    plt.plot(x, out, alpha=0.9, linestyle='dashed')
-
-    # <codecell>
-
-
-
+def get_flops(fn, *args, **kwargs):
+    """Borrowed from flax.nn.tabulate"""
+    e = fn.lower(*args, **kwargs)
+    cost = e.cost_analysis()
+    if cost is None:
+        return 0
+    flops = int(cost['flops']) if 'flops' in cost else 0
+    return flops
