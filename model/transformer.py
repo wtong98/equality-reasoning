@@ -129,7 +129,7 @@ class TransformerBlock(nn.Module):
         assert inputs.ndim == 3
 
         x = nn.MultiHeadDotProductAttention(num_heads=self.config.n_heads, 
-                                            qkv_features=self.config.n_hidden)(inputs_q=inputs, inputs_kv=inputs, mask=decoder_mask)
+                                            qkv_features=self.config.n_hidden)(inputs_q=inputs, inputs_kv=inputs, mask=decoder_mask, sow_weights=True)
         if self.config.residual_connections:
             x = x + inputs
 

@@ -241,11 +241,13 @@ def eval_cases(all_cases, eval_task, key_name='eval_acc', use_mse=False, ignore_
                 raise e
 
 
+# TODO: fix cost_analysis for FLOPs
 def get_flops(fn, *args, **kwargs):
     """Borrowed from flax.nn.tabulate"""
-    e = fn.lower(*args, **kwargs)
+    e = fn.lower(*args, **kwargs).compile()
     cost = e.cost_analysis()
     if cost is None:
+        print('warn: unable to estimate flops')
         return 0
-    flops = int(cost['flops']) if 'flops' in cost else 0
+    flops = int(cost['flops']) if 'flops' in cost else -1
     return flops

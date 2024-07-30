@@ -1,9 +1,10 @@
-"""Compare the impact of architecture on same-different performance"""
+"""Comparing the impact of architecture on same-different performance"""
 
 
 # <codecell>
 from pathlib import Path
 
+from flax import traverse_util
 import jax
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
@@ -22,8 +23,8 @@ from model.transformer import TransformerConfig
 from task.function import SameDifferent 
 
 
-n_points = 128
-n_dims = 256
+n_points = 2048
+n_dims = 16
 n_hidden = 512
 
 sd_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True)
@@ -44,12 +45,13 @@ lr = gamma0 * 0.1
 #                    act_fn='relu')
 
 config = TransformerConfig(n_layers=1,
-                           n_hidden=512,
+                           n_hidden=2048,
                            pos_emb=False,
-                           n_mlp_layers=0,
+                           n_mlp_layers=2,
+                           n_heads=32,
                            layer_norm=False,
-                           as_rf_model=False,
-                           residual_connections=True)
+                           as_rf_model=True,
+                           residual_connections=False)
 
 state, hist = train(config,
                     data_iter=iter(sd_task), 
@@ -57,8 +59,8 @@ state, hist = train(config,
                     loss='bce',
                     gamma=None,
                     test_every=1000,
-                    train_iters=5_000, 
-                    lr=1e-4, optim=optax.adamw,
+                    train_iters=50_000, 
+                    lr=1e-2, optim=optax.sgd,
                     seed=None)
 
 # <codecell>
@@ -75,4 +77,30 @@ print(np.mean(ys[preds==0] == preds[preds==0]))
 
 
 # %%
-jax.tree.map(np.shape, state.params)
+xs_same = np.random.randn(2, n_dims) / np.sqrt(n_dims)
+xs_same[0] = xs_same[1]
+xs_diff = np.random.randn(2, n_dims) / np.sqrt(n_dims)
+
+xs = np.stack([xs_same, xs_diff])
+
+out, feats = state.apply_fn({'params': state.params}, xs, mutable='intermediates')
+# out, feats = state.apply_fn({'params': state.params}, xs, capture_intermediates=True)
+# feats
+
+att_same, att_diff = list(traverse_util.flatten_dict(feats).values())[0][0]
+print(att_same)
+print(att_diff)
+print(out)
+
+print(jax.tree.map(np.shape, state.params))
+val_mat = state.params['TransformerBlock_0']['MultiHeadDotProductAttention_0']['value']['kernel'].squeeze()
+proj_mat = state.params['TransformerBlock_0']['MultiHeadDotProductAttention_0']['out']['kernel'].squeeze()
+
+in_mat = state.params['Dense_0']['kernel']
+out_mat = state.params['Dense_1']['kernel']
+
+xs_diff @ in_mat @ val_mat @ proj_mat @ out_mat
+
+
+
+# %%
