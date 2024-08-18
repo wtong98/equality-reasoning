@@ -12,7 +12,7 @@ sys.path.append('../../../../')
 from common import *
 from train import *
 
-from model.mlp import MlpConfig 
+from model.mlp import RfConfig 
 from model.transformer import TransformerConfig
 from task.function import SameDifferent
 
@@ -43,21 +43,21 @@ for v in n_vocab:
         params = {'n_symbols': v, 'n_dims': d}
         
         all_cases.extend([
-            Case(f'MLP', 
-                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+            Case(f'MLP RF', 
+                RfConfig(n_in=2*d, n_out=1, n_hidden=n_hidden, seed=new_seed()),
                 train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
                 train_task=SameDifferent(n_symbols=v, n_dims=d),
                 test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024)),
 
-            Case(f'Transformer (no MLP)', 
-                TransformerConfig(n_out=1, n_layers=1, n_hidden=n_hidden, n_heads=2, 
+            Case(f'Transformer RF (no MLP)', 
+                TransformerConfig(as_rf_model=True, n_out=1, n_layers=1, n_hidden=n_hidden, n_heads=2, 
                                   pos_emb=False, layer_norm=False, residual_connections=False, n_mlp_layers=0),
                 train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
                 train_task=SameDifferent(n_symbols=v, n_dims=d),
                 test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024)),
 
-            Case(f'Transformer (w/ MLP)', 
-                TransformerConfig(n_out=1, n_layers=1, n_hidden=n_hidden, n_heads=2, 
+            Case(f'Transformer RF (w/ MLP)', 
+                TransformerConfig(as_rf_model=True, n_out=1, n_layers=1, n_hidden=n_hidden, n_heads=2, 
                                   pos_emb=False, layer_norm=False, residual_connections=False, n_mlp_layers=2),
                 train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
                 train_task=SameDifferent(n_symbols=v, n_dims=d),

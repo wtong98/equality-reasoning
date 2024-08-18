@@ -22,9 +22,32 @@ from model.mlp import MlpConfig
 from model.transformer import TransformerConfig
 from task.function import SameDifferent 
 
+# <codecell>
+df = collate_dfs('remote/1_compare_arch/generalize')
+df
 
-n_points = 2048
-n_dims = 16
+# <codecell>
+def extract_plot_vals(row):
+    return pd.Series([
+        row['name'],
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+    ], index=['name', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+grid = sns.relplot(plot_df, x='n_symbols', y='acc_seen', hue='name', col='n_dims', col_wrap=3, height=2)
+grid.set(xscale='log')
+plt.savefig('fig/compare_arch_seen.png')
+
+# <codecell>
+n_points = 64
+n_dims = 128
 n_hidden = 512
 
 sd_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True)
@@ -45,12 +68,12 @@ lr = gamma0 * 0.1
 #                    act_fn='relu')
 
 config = TransformerConfig(n_layers=1,
-                           n_hidden=2048,
+                           n_hidden=512,
                            pos_emb=False,
                            n_mlp_layers=2,
-                           n_heads=32,
+                           n_heads=2,
                            layer_norm=False,
-                           as_rf_model=True,
+                           as_rf_model=False,
                            residual_connections=False)
 
 state, hist = train(config,
@@ -60,7 +83,7 @@ state, hist = train(config,
                     gamma=None,
                     test_every=1000,
                     train_iters=50_000, 
-                    lr=1e-2, optim=optax.sgd,
+                    # lr=1e-2, optim=optax.sgd,
                     seed=None)
 
 # <codecell>
