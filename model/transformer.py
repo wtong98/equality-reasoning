@@ -43,6 +43,8 @@ class TransformerConfig:
     return_final_logits_only: bool = True
     pure_linear_self_att: bool = False
     as_rf_model: bool = False
+    use_simple_att: bool = False
+    freeze_emb: bool = False
 
     def to_model(self):
         return Transformer(self)
@@ -118,6 +120,33 @@ class AddPositionEmbs(nn.Module):
         return inputs + pe
 
 
+class SimpleSelfAttention(nn.Module):
+    config: TransformerConfig
+
+    @nn.compact
+    def __call__(self, inputs):
+        self.sow('intermediates', 'inputs', inputs)
+        
+        n_feats = inputs.shape[-1]
+        n_heads = self.config.n_heads
+        assert n_feats % n_heads == 0
+
+        head_dim = n_feats // n_heads
+        
+        query = nn.DenseGeneral(features=(n_heads, head_dim), name='query', use_bias=False)(inputs)
+        key = nn.DenseGeneral(features=(n_heads, head_dim), name='key', use_bias=False)(inputs)
+
+        query = query / jnp.sqrt(head_dim)
+        attn_weights = jnp.einsum('...qhd,...khd->...hqk', query, key)
+        attn_weights = jax.nn.softmax(attn_weights, axis=-1)
+
+        self.sow('intermediates', 'attention_weights', attn_weights)
+
+        out = jnp.einsum('...hqk,...kd->...qhd', attn_weights, inputs)
+        out = nn.DenseGeneral(features=n_feats, axis=(-2, -1), use_bias=False)(out)
+        return out
+
+
 class TransformerBlock(nn.Module):
     config: TransformerConfig
 
@@ -128,8 +157,12 @@ class TransformerBlock(nn.Module):
 
         assert inputs.ndim == 3
 
-        x = nn.MultiHeadDotProductAttention(num_heads=self.config.n_heads, 
-                                            qkv_features=self.config.n_hidden)(inputs_q=inputs, inputs_kv=inputs, mask=decoder_mask, sow_weights=True)
+        if self.config.use_simple_att:
+            x = SimpleSelfAttention(config=self.config)(inputs)
+        else:
+            x = nn.MultiHeadDotProductAttention(num_heads=self.config.n_heads, 
+                                                qkv_features=self.config.n_hidden)(inputs_q=inputs, inputs_kv=inputs, mask=decoder_mask, sow_weights=True)
+
         if self.config.residual_connections:
             x = x + inputs
 
@@ -172,8 +205,8 @@ class Transformer(nn.Module):
                     num_embeddings=config.vocab_size,
                     features=config.n_emb)(y)
         else:
-            name = 'input_mlp_freeze' if self.config.as_rf_model else None
-            y = nn.Dense(features=config.n_hidden, name=name)(y)  # project to correct hidden dim
+            name = 'input_mlp_freeze' if (self.config.as_rf_model or self.config.freeze_emb) else None
+            y = nn.Dense(features=config.n_hidden, name=name, use_bias=True)(y)  # project to correct hidden dim
 
         if config.pos_emb:
             y = AddPositionEmbs(config=config)(y)
@@ -191,7 +224,7 @@ class Transformer(nn.Module):
         if config.use_last_index_output:
             return y[:,-1,-1]
 
-        logits = nn.Dense(config.n_out)(y)
+        logits = nn.Dense(config.n_out, use_bias=False)(y)
         if config.return_final_logits_only:
             logits = logits[:,-1,:]
 
