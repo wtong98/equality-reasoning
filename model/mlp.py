@@ -31,6 +31,7 @@ class MlpConfig:
     layer_norm: bool = False
     mup_scale: bool = False
     feature_learning_strength: float = 1
+    as_rf_model: bool = False
     use_bias: bool = True
 
     def to_model(self):
@@ -52,9 +53,14 @@ class MLP(nn.Module):
         
         x = x.reshape(x.shape[0], -1)
 
-        for _ in range(self.config.n_layers):
+        for i in range(self.config.n_layers):
+            name = None
+            if self.config.as_rf_model:
+                name = f'Dense_{i}_freeze'
+
             x = nn.Dense(self.config.n_hidden, 
-                         use_bias=self.config.use_bias)(x)
+                         use_bias=self.config.use_bias,
+                         name=name)(x)
 
             if self.config.layer_norm:
                 x = nn.LayerNorm()(x)

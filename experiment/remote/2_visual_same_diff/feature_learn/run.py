@@ -1,0 +1,95 @@
+"""
+Match task accuracies
+"""
+
+# <codecell>
+import pandas as pd
+from tqdm import tqdm
+
+import sys
+sys.path.append('../../../../')
+
+from common import *
+from train import *
+
+from model.mlp import MlpConfig 
+from task.same_different import SameDifferentPentomino
+
+run_id = new_seed()
+print('RUN ID', run_id)
+
+run_split = 1
+
+ps = np.random.permutation(np.arange(18))
+
+train_iters = 100_000
+n_hidden = 512
+
+n_trains = [2, 4, 8, 10, 12, 14, 16]
+gs = [0.01, 0.1, 1, 10, 100]
+base_lr = 0.1
+
+### START TEST CONFIGS
+train_iters = 1000
+n_hidden = 512
+
+n_trains = [16]
+gs = [1]
+base_lr = 0.1
+### END TEST CONFIGS
+
+all_cases = []
+test_tasks = []
+
+for n_train in n_trains:
+    train_ps = ps[:n_train]
+    test_ps = ps[n_train:]
+
+    all_cases.extend([
+        Case(f'MLP (Adam)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+            train_task=SameDifferentPentomino(ps=train_ps),
+            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024)),
+
+        Case(f'MLP (SGD, lr=1e-3)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': 1e-3},
+            train_task=SameDifferentPentomino(ps=train_ps),
+            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024)),
+
+        Case(f'MLP (RF)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
+            train_task=SameDifferentPentomino(ps=train_ps),
+            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024)),
+    ] + [
+            Case(f'MLP (gamma={gamma})', 
+                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, feature_learning_strength=gamma),
+                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': base_lr * gamma},
+                train_task=SameDifferentPentomino(ps=train_ps),
+                test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024))
+        for gamma in gs])
+
+
+all_cases = split_cases(all_cases, run_split)
+
+for case in tqdm(all_cases):
+    print('RUNNING', case.name)
+    case.run()
+
+train_tasks = [c.train_task for c in all_cases]
+test_tasks = [c.test_task for c in all_cases]
+eval_cases(all_cases, eval_task=train_tasks, key_name='acc_seen')
+eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
+
+for case in all_cases:
+    case.info['flops'] = case.get_flops()
+    case.state = None
+
+df = pd.DataFrame(all_cases)
+df.to_pickle(f'res.{run_id}.pkl')
+
+print('done!')
+
+# %%

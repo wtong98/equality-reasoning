@@ -4,7 +4,11 @@
 
 import numpy as np
 
-from pentomino import pieces
+try:
+    from pentomino import pieces
+except ImportError:
+    from .pentomino import pieces
+
 pieces = np.array(pieces, dtype='object')
 
 def batch_choice(a, n_elem, batch_size, rng=None):
@@ -23,14 +27,18 @@ def batch_choice(a, n_elem, batch_size, rng=None):
 
 
 class SameDifferentPentomino:
-    def __init__(self, width=2, batch_size=128):
+    def __init__(self, ps=None, width=2, batch_size=128):
+        self.pieces = ps
+        if self.pieces is None:
+            self.pieces = np.arange(len(pieces))
+
         self.width = width
         self.batch_size = batch_size
         self.rng = np.random.default_rng(None)
     
     def __next__(self):
-        xs = np.zeros((self.batch_size, self.width * 5, self.width * 5))
-        xs_idxs = batch_choice(len(pieces), 2, self.batch_size)
+        xs = np.zeros((self.batch_size, self.width * 7, self.width * 7))
+        xs_idxs = batch_choice(self.pieces, 2, self.batch_size)
         xs_patches = batch_choice(self.width**2, 2, self.batch_size)
 
         ys = self.rng.binomial(n=1, p=0.5, size=(self.batch_size,))
@@ -44,11 +52,11 @@ class SameDifferentPentomino:
             a = self.rng.choice(a)
             b = self.rng.choice(b)
 
-            a_x = 5 * (x_patch[0] // self.width)
-            a_y = 5 * (x_patch[0] % self.width)
+            a_x = 7 * (x_patch[0] // self.width) + 1
+            a_y = 7 * (x_patch[0] % self.width) + 1
 
-            b_x = 5 * (x_patch[1] // self.width)
-            b_y = 5 * (x_patch[1] % self.width)
+            b_x = 7 * (x_patch[1] // self.width) + 1
+            b_y = 7 * (x_patch[1] % self.width) + 1
 
             x[a_x:a_x+5, a_y:a_y+5] = a
             x[b_x:b_x+5, b_y:b_y+5] = b
@@ -61,7 +69,7 @@ class SameDifferentPentomino:
 
 # rng = np.random.default_rng(None)
 # rng.choice(np.array(pieces, dtype='object')[[[1,2], [2,3], [3,4]]][0][0])
-# task = SameDifferentPentomino(batch_size=1)
+# task = SameDifferentPentomino(batch_size=1, ps=[1,2])
 # xs, ys = next(task)
 
 # xs = xs.squeeze()
