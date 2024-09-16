@@ -21,11 +21,38 @@ from model.mlp import MlpConfig
 from model.transformer import TransformerConfig
 from task.same_different import SameDifferentPentomino
 
+# <codecell>
+df = collate_dfs('remote/2_visual_same_diff/feature_learn')
+df
 
+# <codecell>
+def extract_plot_vals(row):
+    return pd.Series([
+        row['name'],
+        len(row['train_task'].pieces),
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+    ], index=['name', 'n_pieces', 'acc_seen', 'acc_unseen'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True) \
+            .melt(id_vars=['name', 'n_pieces'], var_name='acc_type', value_name='acc')
+plot_df
+
+
+# <codecell>
+sns.relplot(plot_df, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
+sns.savefig('fig/visual_sd.png')
+
+# <codecell>
+accs = [m['accuracy'] for m in df.iloc[-1]['hist']['test']]
+plt.plot(accs)
+
+# <codecell>
 n_hidden = 512
 
 ps = np.random.permutation(np.arange(18))
-n_train = 2
+n_train = 16
 
 ps_train = ps[:n_train]
 ps_test = ps[n_train:]
@@ -33,14 +60,14 @@ ps_test = ps[n_train:]
 train_task = SameDifferentPentomino(ps=ps_train, width=2, batch_size=128)
 test_task = SameDifferentPentomino(ps=ps_test, width=2, batch_size=128)
 
-gamma0 = 10
+gamma0 = 100
 lr = gamma0 * 0.1
 
 config = MlpConfig(n_out=1, 
                    vocab_size=None, 
                    n_layers=1, 
                    n_hidden=n_hidden, 
-                   use_bias=False,
+                  #  use_bias=False,
                    act_fn='relu',
                    feature_learning_strength=gamma0,
                 #    as_rf_model=True

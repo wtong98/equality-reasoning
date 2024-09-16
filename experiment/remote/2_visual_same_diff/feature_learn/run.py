@@ -30,12 +30,12 @@ gs = [0.01, 0.1, 1, 10, 100]
 base_lr = 0.1
 
 ### START TEST CONFIGS
-train_iters = 1000
-n_hidden = 512
+# train_iters = 1000
+# n_hidden = 512
 
-n_trains = [16]
-gs = [1]
-base_lr = 0.1
+# n_trains = [16]
+# gs = [1]
+# base_lr = 0.1
 ### END TEST CONFIGS
 
 all_cases = []
@@ -66,7 +66,7 @@ for n_train in n_trains:
     ] + [
             Case(f'MLP (gamma={gamma})', 
                 MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, feature_learning_strength=gamma),
-                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': base_lr * gamma},
+                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': base_lr * gamma},
                 train_task=SameDifferentPentomino(ps=train_ps),
                 test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024))
         for gamma in gs])
