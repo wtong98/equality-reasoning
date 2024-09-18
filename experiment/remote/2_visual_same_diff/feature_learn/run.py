@@ -28,6 +28,7 @@ n_hidden = 512
 n_trains = [2, 4, 8, 10, 12, 14, 16]
 gs = [0.01, 0.1, 1, 10, 100]
 base_lr = 0.1
+blur = 0.5
 
 ### START TEST CONFIGS
 # train_iters = 1000
@@ -45,31 +46,33 @@ for n_train in n_trains:
     train_ps = ps[:n_train]
     test_ps = ps[n_train:]
 
-    all_cases.extend([
-        Case(f'MLP (Adam)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferentPentomino(ps=train_ps),
-            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024)),
+    for test_blur, random_blur in [(0, True), (blur, False)]:
 
-        Case(f'MLP (SGD, lr=1e-3)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': 1e-3},
-            train_task=SameDifferentPentomino(ps=train_ps),
-            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024)),
+        all_cases.extend([
+            Case(f'MLP (Adam)', 
+                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+                train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
+                test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
 
-        Case(f'MLP (RF)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
-            train_task=SameDifferentPentomino(ps=train_ps),
-            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024)),
-    ] + [
-            Case(f'MLP (gamma={gamma})', 
-                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, feature_learning_strength=gamma),
-                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': base_lr * gamma},
-                train_task=SameDifferentPentomino(ps=train_ps),
-                test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024))
-        for gamma in gs])
+            Case(f'MLP (SGD, lr=1e-3)', 
+                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': 1e-3},
+                train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
+                test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
+
+            Case(f'MLP (RF)', 
+                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
+                train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
+                test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur))
+        ] + [
+                Case(f'MLP (gamma={gamma})', 
+                    MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, feature_learning_strength=gamma),
+                    train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': base_lr * gamma},
+                    train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
+                    test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur))
+            for gamma in gs])
 
 
 all_cases = split_cases(all_cases, run_split)

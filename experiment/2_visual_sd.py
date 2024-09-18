@@ -27,40 +27,49 @@ df
 
 # <codecell>
 def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+
     return pd.Series([
         row['name'],
         len(row['train_task'].pieces),
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-    ], index=['name', 'n_pieces', 'acc_seen', 'acc_unseen'])
+        max(hist_acc),
+        hist_acc,
+        np.arange(len(row['hist']['test']))
+    ], index=['name', 'n_pieces', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'hist_acc', 'time'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
-            .reset_index(drop=True) \
-            .melt(id_vars=['name', 'n_pieces'], var_name='acc_type', value_name='acc')
+            .reset_index(drop=True)
 plot_df
 
+# <codecell>
+mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_pieces'], var_name='acc_type', value_name='acc')
+mdf
+
+sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
+plt.savefig('fig/visual_sd.png')
 
 # <codecell>
-sns.relplot(plot_df, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
-sns.savefig('fig/visual_sd.png')
+mdf = plot_df.drop(['acc_seen', 'acc_unseen'], axis=1)
+mdf = mdf.explode(['hist_acc', 'time'])
 
-# <codecell>
-accs = [m['accuracy'] for m in df.iloc[-1]['hist']['test']]
-plt.plot(accs)
+sns.relplot(mdf, x='time', y='hist_acc', hue='name', col='n_pieces', col_wrap=3, kind='line')
+plt.savefig('fig/visual_sd_acc_curves.png')
 
 # <codecell>
 n_hidden = 512
 
 ps = np.random.permutation(np.arange(18))
-n_train = 16
+n_train = 12
 
 ps_train = ps[:n_train]
 ps_test = ps[n_train:]
 
-train_task = SameDifferentPentomino(ps=ps_train, width=2, batch_size=128)
-test_task = SameDifferentPentomino(ps=ps_test, width=2, batch_size=128)
+train_task = SameDifferentPentomino(ps=ps_train, width=2, batch_size=128, blur=1, random_blur=True)
+test_task = SameDifferentPentomino(ps=ps_test, width=2, batch_size=128, blur=0)
 
-gamma0 = 100
+gamma0 = 10
 lr = gamma0 * 0.1
 
 config = MlpConfig(n_out=1, 

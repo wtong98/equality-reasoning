@@ -1,8 +1,8 @@
 """Same-different tasks"""
 
 # <codecell>
-
 import numpy as np
+from scipy.ndimage import gaussian_filter
 
 try:
     from pentomino import pieces
@@ -27,12 +27,14 @@ def batch_choice(a, n_elem, batch_size, rng=None):
 
 
 class SameDifferentPentomino:
-    def __init__(self, ps=None, width=2, batch_size=128):
+    def __init__(self, ps=None, width=2, blur=0, random_blur=False, batch_size=128):
         self.pieces = ps
         if self.pieces is None:
             self.pieces = np.arange(len(pieces))
 
         self.width = width
+        self.blur = blur
+        self.random_blur = random_blur
         self.batch_size = batch_size
         self.rng = np.random.default_rng(None)
     
@@ -61,21 +63,22 @@ class SameDifferentPentomino:
             x[a_x:a_x+5, a_y:a_y+5] = a
             x[b_x:b_x+5, b_y:b_y+5] = b
 
+        if self.blur > 0:
+            if self.random_blur:
+                self.rng.uniform(0, self.blur)
+
+            xs = gaussian_filter(xs, sigma=self.blur, axes=[-2, -1])
         return xs, ys
 
 
     def __iter__(self):
         return self
 
-# rng = np.random.default_rng(None)
-# rng.choice(np.array(pieces, dtype='object')[[[1,2], [2,3], [3,4]]][0][0])
-# task = SameDifferentPentomino(batch_size=1, ps=[1,2])
+# task = SameDifferentPentomino(batch_size=2, ps=None, blur=0.5)
 # xs, ys = next(task)
 
-# xs = xs.squeeze()
-
 # import matplotlib.pyplot as plt
-# plt.imshow(xs)
+# plt.imshow(xs[0])
 # print(ys)
 
 
