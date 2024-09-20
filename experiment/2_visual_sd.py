@@ -48,26 +48,27 @@ mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_pieces
 mdf
 
 sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
-plt.savefig('fig/visual_sd.png')
+plt.savefig('fig/visual_sd_smooth.png')
 
 # <codecell>
 mdf = plot_df.drop(['acc_seen', 'acc_unseen'], axis=1)
 mdf = mdf.explode(['hist_acc', 'time'])
 
 sns.relplot(mdf, x='time', y='hist_acc', hue='name', col='n_pieces', col_wrap=3, kind='line')
-plt.savefig('fig/visual_sd_acc_curves.png')
+plt.savefig('fig/visual_sd_acc_curves_smooth.png')
 
 # <codecell>
 n_hidden = 512
 
+width = 2
 ps = np.random.permutation(np.arange(18))
-n_train = 12
+n_train = 16
 
 ps_train = ps[:n_train]
 ps_test = ps[n_train:]
 
-train_task = SameDifferentPentomino(ps=ps_train, width=2, batch_size=128, blur=1, random_blur=True)
-test_task = SameDifferentPentomino(ps=ps_test, width=2, batch_size=128, blur=0)
+train_task = SameDifferentPentomino(ps=ps_train, width=width, batch_size=128, blur=0, random_blur=True)
+test_task = SameDifferentPentomino(ps=ps_test, width=width, batch_size=128, blur=0)
 
 gamma0 = 10
 lr = gamma0 * 0.1
@@ -99,7 +100,7 @@ state, hist = train(config,
                     test_iter=iter(test_task), 
                     loss='bce',
                     test_every=1000,
-                    train_iters=100_000, 
+                    train_iters=10_000, 
                     optim=optax.sgd,  # NOTE: sharp contrast in using adam vs sgd
                     seed=None,
                     # lr=1e-4
@@ -117,5 +118,53 @@ Observations:
 - Attains full success eventually
 - Probably a feature learning story here
 - SignSGD does't seem to work as well (may need more tuning / momentum?)
-- TODO: try more extreme train-test splits
 '''
+
+# %%
+jax.tree.map(np.shape, state.params)
+
+w = state.params['Dense_0']['kernel']
+a = state.params['Dense_1']['kernel']
+
+idx = 5
+plt.imshow(w[:,idx].reshape(14, 14))
+a[idx]
+
+
+
+# %%
+from task.pentomino import pieces
+
+all_pieces = []
+for p in pieces:
+    all_pieces.extend(p)
+
+corrs = np.zeros((len(all_pieces),)*2)
+for i, pi in enumerate(all_pieces):
+    for j, pj in enumerate(all_pieces):
+        corrs[i,j] = np.sum(pi * pj)
+
+
+plt.imshow(corrs)
+plt.colorbar()
+
+# <codecell>
+idx = 32
+print(a[idx])
+
+zs = np.array(all_pieces)
+zs = zs.reshape(zs.shape[0], -1)
+
+w_sel = w[:,idx].reshape(14, 14)
+w_sel = w_sel[1:6,1:6]
+# plt.imshow(w_sel)
+w_sel = w_sel.reshape(-1, 1)
+
+betas = np.linalg.pinv(zs @ zs.T) @ zs @ w_sel
+pred = zs.T @ betas
+# plt.imshow(pred.reshape(5, 5))
+plt.plot(betas)
+
+# TODO: formalize into complete plot <-- STOPPED HERE
+
+

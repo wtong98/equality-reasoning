@@ -74,7 +74,7 @@ class SameDifferentPentomino:
     def __iter__(self):
         return self
 
-# task = SameDifferentPentomino(batch_size=2, ps=None, blur=0.5)
+# task = SameDifferentPentomino(width=4, batch_size=2, ps=None, blur=0)
 # xs, ys = next(task)
 
 # import matplotlib.pyplot as plt
