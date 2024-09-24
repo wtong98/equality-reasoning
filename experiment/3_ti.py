@@ -27,18 +27,18 @@ n_points = 256
 n_dims = 32
 n_hidden = 512
 
-n_symbols = 10
+n_symbols = 7
 
-gamma = 0.01
-base_lr = 0.01**2
+gamma = 10_000
+base_lr = 0.01
 lr = gamma * base_lr
 
-train_task = TiTask(n_symbols=n_symbols, sep_dists=[1])
-test_task = TiTask(n_symbols=n_symbols, sep_dists=[2, 3, 4])
+train_task = TiTask(n_symbols=n_symbols, sep_dists=[1], one_hot_encode=False)
+test_task = TiTask(n_symbols=n_symbols, sep_dists=[2, 3, 4], one_hot_encode=False)
 
 config = MlpConfig(mup_scale=True,
                    n_out=1, 
-                   vocab_size=None, 
+                   vocab_size=7, 
                    n_layers=1, 
                    n_hidden=n_hidden, 
                    feature_learning_strength=gamma,
@@ -47,9 +47,9 @@ config = MlpConfig(mup_scale=True,
 
 # config = TransformerConfig(n_layers=1,
 #                            n_hidden=512,
-#                            pos_emb=False,
+#                            pos_emb=True,
 #                            n_mlp_layers=0,
-#                            n_heads=2,
+#                            n_heads=4,
 #                            layer_norm=False,
 #                            as_rf_model=False,
 #                            residual_connections=False,
@@ -59,10 +59,10 @@ config = MlpConfig(mup_scale=True,
 state, hist = train(config,
                     data_iter=iter(train_task), 
                     test_iter=iter(test_task), 
-                    loss='mse',
+                    loss='bce',
                     gamma=None,
-                    test_every=500,
-                    train_iters=2_000, 
+                    test_every=1000,
+                    train_iters=10_000, 
                     lr=lr,
                     optim=optax.sgd,
                     seed=None)
@@ -72,3 +72,8 @@ xs, ys = next(test_task)
 
 preds = state.apply_fn({'params': state.params}, xs)
 np.sign(preds) == ys
+preds
+ys
+
+# <codecell>
+# state.apply_fn({'params': state.params}, jnp.array([[[1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0]]]))

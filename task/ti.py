@@ -28,7 +28,7 @@ class TiTask:
         self.xs = [(a, b) for a, b in self.xs if a != b]
         if sep_dists is not None:
             self.xs = [(a, b) for a, b in self.xs if np.abs(a - b) in sep_dists]
-        self.ys = [1 if a > b else -1 for a, b in self.xs]
+        self.ys = [1 if a > b else 0 for a, b in self.xs]
 
         self.xs = np.array(self.xs)
         self.ys = np.array(self.ys)
