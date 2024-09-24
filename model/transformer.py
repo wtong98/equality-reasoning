@@ -206,7 +206,8 @@ class Transformer(nn.Module):
                     features=config.n_emb)(y)
         else:
             name = 'input_mlp_freeze' if (self.config.as_rf_model or self.config.freeze_emb) else None
-            y = nn.Dense(features=config.n_hidden, name=name, use_bias=True)(y)  # project to correct hidden dim
+            y = nn.Dense(features=config.n_hidden, name=name, use_bias=False)(y)  # project to correct hidden dim
+            y = nn.relu(y)
 
         if config.pos_emb:
             y = AddPositionEmbs(config=config)(y)

@@ -65,12 +65,10 @@ def split_cases(all_cases, run_split):
 
 def summon_dir(path: str, clear_if_exists=False):
     new_dir = Path(path)
-    if not new_dir.exists():
-        new_dir.mkdir(parents=True)
-    elif clear_if_exists:
-        for item in new_dir.iterdir():
-            shutil.rmtree(item)
-    
+    if new_dir.exists() and clear_if_exists:
+        shutil.rmtree(new_dir)
+
+    new_dir.mkdir(parents=True)
     return new_dir
 
 

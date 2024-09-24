@@ -20,6 +20,7 @@ from train import *
 from model.mlp import MlpConfig
 from model.transformer import TransformerConfig
 from task.same_different import SameDifferentPentomino
+from task.pentomino import pieces
 
 # <codecell>
 df = collate_dfs('remote/2_visual_same_diff/feature_learn')
@@ -56,6 +57,72 @@ mdf = mdf.explode(['hist_acc', 'time'])
 
 sns.relplot(mdf, x='time', y='hist_acc', hue='name', col='n_pieces', col_wrap=3, kind='line')
 plt.savefig('fig/visual_sd_acc_curves_smooth.png')
+
+
+# <codecell>
+### LARGE PLOT
+df = collate_dfs('remote/2_visual_same_diff/large')
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+
+    return pd.Series([
+        row['name'],
+        row['train_task'].width,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        max(hist_acc),
+        hist_acc,
+        np.arange(len(row['hist']['test']))
+    ], index=['name', 'n_width', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'hist_acc', 'time'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_width'], var_name='acc_type', value_name='acc')
+mdf
+
+sns.relplot(mdf, x='n_width', y='acc', col='acc_type', hue='name', kind='line', marker='o')
+plt.savefig('fig/visual_sd_width_wise.png')
+
+# <codecell>
+mdf = plot_df.drop(['acc_seen', 'acc_unseen'], axis=1)
+mdf = mdf.explode(['hist_acc', 'time'])
+
+sns.relplot(mdf, x='time', y='hist_acc', hue='name', col='n_width', col_wrap=3, kind='line')
+plt.savefig('fig/visual_sd_width_acc_curves.png')
+
+# <codecell>
+threshold = 0.9
+
+def extract(row):
+    time_idx = np.argmax(np.array(row['hist_acc']) > threshold)
+
+    return pd.Series([
+        row['name'],
+        row['n_width'],
+        time_idx
+    ], index=['name', 'n_width', 'time'])
+
+mdf = plot_df.apply(extract, axis=1).reset_index(drop=True)
+
+# <codecell>
+g = sns.lineplot(mdf, x='n_width', y='time', marker='o', hue='name')
+
+widths = np.arange(2, 9)
+time_est = widths
+g.plot(widths, 6 * time_est, '--', color='black')
+g.plot(widths, time_est**2, '--', color='black')
+g.plot(widths, 0.5 * time_est**2 * np.log(time_est), '--', color='black')
+
+g.set_xscale('log')
+g.set_yscale('log')
+
+plt.savefig('fig/visual_sd_width_success_thresh.png')
 
 # <codecell>
 n_hidden = 512
@@ -126,11 +193,67 @@ jax.tree.map(np.shape, state.params)
 w = state.params['Dense_0']['kernel']
 a = state.params['Dense_1']['kernel']
 
-idx = 5
-plt.imshow(w[:,idx].reshape(14, 14))
-a[idx]
+# idx = 462
+# plt.imshow(w[:,idx].reshape(14, 14))
+# a[idx]
+
+all_pieces = []
+for p in pieces:
+    all_pieces.extend(p)
 
 
+sort_idxs = np.argsort(a.flatten())
+im_dir = summon_dir('fig/visual_sd_comps', clear_if_exists=True)
+
+piece_idxs = [len(p) for p in pieces[:-1]]
+piece_idxs = np.cumsum(piece_idxs)
+
+for rank, idx in tqdm(enumerate(sort_idxs), total=len(sort_idxs)):
+    zs = np.array(all_pieces)
+    zs = zs.reshape(zs.shape[0], -1)
+
+    w_orig = w[:,idx].reshape(14, 14)
+    plt.imshow(w_orig)
+    plt.savefig(im_dir / f'{rank}_w_orig.png')
+    plt.clf()
+
+    w_reco = np.zeros(w_orig.shape)
+    coords = [1, 8]
+    fig, axs = plt.subplots(2, 2, figsize=(20, 6))
+    for x in coords:
+        for y in coords:
+            w_sel = w_orig[x:x+5,y:y+5]
+            w_sel = w_sel.reshape(-1, 1)
+
+            betas = np.linalg.pinv(zs @ zs.T) @ zs @ w_sel
+            pred = zs.T @ betas
+            pred = pred.reshape(5, 5)
+
+            w_reco[x:x+5,y:y+5] = pred
+
+            ax_x = 0 if x == 1 else 1
+            ax_y = 0 if y == 1 else 1
+            ax = axs[ax_x, ax_y]
+
+            ax.plot(betas, 'o')
+            for p in piece_idxs:
+                ax.axvline(x=p-0.5, color='red', alpha=0.2)
+
+            ax.axhline(y=0, color='gray', linestyle='dashed', alpha=0.5)
+            ax.set_xlabel('piece idx')
+            ax.set_ylabel('coefficient')
+    
+    fig.tight_layout()
+    fig.savefig(im_dir / f'{rank}_betas.png')
+    
+    plt.clf()
+
+    plt.imshow(w_reco)
+    plt.savefig(im_dir / f'{rank}_w_reco.png')
+
+# <codecell>
+plt.plot(a.flatten()[sort_idxs])
+plt.savefig(im_dir / 'a.png')
 
 # %%
 from task.pentomino import pieces
@@ -147,24 +270,3 @@ for i, pi in enumerate(all_pieces):
 
 plt.imshow(corrs)
 plt.colorbar()
-
-# <codecell>
-idx = 32
-print(a[idx])
-
-zs = np.array(all_pieces)
-zs = zs.reshape(zs.shape[0], -1)
-
-w_sel = w[:,idx].reshape(14, 14)
-w_sel = w_sel[1:6,1:6]
-# plt.imshow(w_sel)
-w_sel = w_sel.reshape(-1, 1)
-
-betas = np.linalg.pinv(zs @ zs.T) @ zs @ w_sel
-pred = zs.T @ betas
-# plt.imshow(pred.reshape(5, 5))
-plt.plot(betas)
-
-# TODO: formalize into complete plot <-- STOPPED HERE
-
-

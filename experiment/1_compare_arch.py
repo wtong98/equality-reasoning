@@ -20,7 +20,8 @@ from common import *
 from train import *
 from model.mlp import MlpConfig
 from model.transformer import TransformerConfig
-from task.function import SameDifferent 
+from task.same_different import SameDifferent 
+from task.ti import TiTask
 
 # <codecell>
 df = collate_dfs('remote/1_compare_arch/generalize')
@@ -73,33 +74,38 @@ n_points = 256
 n_dims = 32
 n_hidden = 512
 
-sd_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True)
-test_task = SameDifferent(n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
+# NOTE: relu is enough to omit bias from initial layer! (What's happening exactly? How many heads do we need?) <-- STOPPED HERE
 
-# config = MlpConfig(mup_scale=False,
-#                    n_out=1, 
-#                    vocab_size=None, 
-#                    n_layers=1, 
-#                    n_hidden=n_hidden, 
-#                    feature_learning_strength=gamma0,
-#                    use_bias=False,
-#                    act_fn='relu')
+# sd_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True)
+# test_task = SameDifferent(n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
 
-config = TransformerConfig(n_layers=1,
-                           n_hidden=513,
-                           pos_emb=False,
-                           n_mlp_layers=0,
-                           n_heads=3,
-                           layer_norm=False,
-                           as_rf_model=False,
-                           residual_connections=False,
-                           use_simple_att=True,
-                           freeze_emb=False)
+train_task = TiTask(n_symbols=6, sep_dists=[1])
+test_task = TiTask(n_symbols=6, sep_dists=[2, 3, 4])
+
+config = MlpConfig(mup_scale=False,
+                   n_out=1, 
+                   vocab_size=None, 
+                   n_layers=1, 
+                   n_hidden=n_hidden, 
+                #    feature_learning_strength=gamma0,
+                   use_bias=False,
+                   act_fn='relu')
+
+# config = TransformerConfig(n_layers=1,
+#                            n_hidden=512,
+#                            pos_emb=False,
+#                            n_mlp_layers=0,
+#                            n_heads=2,
+#                            layer_norm=False,
+#                            as_rf_model=False,
+#                            residual_connections=False,
+#                            use_simple_att=True,
+#                            freeze_emb=False)
 
 state, hist = train(config,
-                    data_iter=iter(sd_task), 
+                    data_iter=iter(train_task), 
                     test_iter=iter(test_task), 
-                    loss='bce',
+                    loss='mse',
                     gamma=None,
                     test_every=1000,
                     train_iters=5_000, 
