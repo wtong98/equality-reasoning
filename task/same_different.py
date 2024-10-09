@@ -25,6 +25,101 @@ def batch_choice(a, n_elem, batch_size, rng=None):
     idxs = idxs[:,:n_elem]
     return idxs
 
+def gen_patches(patch_size, n_examples=100, rng=None):
+    if rng is None:
+        rng = np.random.default_rng(None)
+
+    examples = rng.binomial(1, p=0.5, size=(n_examples, patch_size, patch_size))
+    examples = 2 * examples - 1
+    return examples
+    
+
+class SameDifferentPsvrt:
+    def __init__(self, patch_size, n_patches, inc_set=None, exc_set=None, seed=None, batch_size=128) -> None:
+        self.patch_size = patch_size
+        self.n_patches = n_patches
+        self.inc_set = inc_set
+        self.exc_set = exc_set
+        self.seed = seed
+        self.batch_size = batch_size
+
+        self.rng = np.random.default_rng(self.seed)
+        self.slack = 10   # extra chances for exc generation
+        self.max_retry = 5
+
+        # self.exc_set = None
+        # if exc_set is not None:
+        #     self.exc_set = {tuple(e) for e in exc_set}
+
+
+    def __next__(self):
+        xs = np.zeros((self.batch_size, self.n_patches * self.patch_size, self.n_patches * self.patch_size))
+        ys = self.rng.binomial(n=1, p=0.5, size=(self.batch_size + self.slack,))
+
+        if self.inc_set is not None:
+            xs_idxs = batch_choice(len(self.inc_set), 2, self.batch_size, self.rng)
+            ys = ys[:self.batch_size]
+
+            if np.sum(ys) > 0:
+                idxs = ys.astype(bool)
+                xs_idxs[idxs,1] = xs_idxs[idxs,0]
+            
+            xs_patches = self.inc_set[xs_idxs]
+        
+        # TODO: test exc_set logic carefully <-- STOPPED HERE
+        elif self.exc_set is not None:
+            for _ in range(self.max_retry):
+                xs_patches = gen_patches(self.patch_size, n_examples=2*(self.batch_size + self.slack))
+                xs_patches = xs_patches.reshape(-1, 2, self.patch_size, self.patch_size)
+
+                if np.sum(ys) > 0:
+                    idxs = ys.astype(bool)
+                    xs_patches[idxs,1] = xs_patches[idxs,0]  
+
+                excs = np.expand_dims(self.exc_set, axis=(1, 2))
+                comps = (excs == xs_patches).sum(axis=(-2, -1))
+                bad_idxs = (comps == self.patch_size**2).sum(axis=(0, 2)).astype(bool)
+                # print(np.sum(bad_idxs))
+                xs_patches = xs_patches[~bad_idxs]
+
+                if len(xs_patches) >= self.batch_size:  
+                    break
+            
+            assert len(xs_patches) >= self.batch_size
+            xs_patches = xs_patches[:self.batch_size]
+            ys = ys[:self.batch_size]
+
+        else:
+            raise NotImplementedError('specify at least inc_set or exc_set')
+
+        xs_locs = batch_choice(self.n_patches**2, 2, self.batch_size)
+        for x, x_patch, x_loc in zip(xs, xs_patches, xs_locs):
+            a, b = x_patch
+
+            a_x = self.patch_size * (x_loc[0] // self.n_patches)
+            a_y = self.patch_size * (x_loc[0] % self.n_patches)
+
+            b_x = self.patch_size * (x_loc[1] // self.n_patches)
+            b_y = self.patch_size * (x_loc[1] % self.n_patches)
+
+            x[a_x:a_x+self.patch_size, a_y:a_y+self.patch_size] = a
+            x[b_x:b_x+self.patch_size, b_y:b_y+self.patch_size] = b
+
+        return xs, ys
+
+    def __iter__(self):
+        return self
+
+# test_set = gen_patches(4, n_examples=2)
+# test_task = SameDifferentPsvrt(patch_size=4, n_patches=3, exc_set=test_set, batch_size=128)
+# xs, ys = next(test_task)
+# xs.shape
+
+# import matplotlib.pyplot as plt
+# plt.imshow(xs[0])
+
+# <codecell>
+
 
 class SameDifferentPentomino:
     def __init__(self, ps=None, width=2, blur=0, random_blur=False, batch_size=128):
@@ -81,8 +176,6 @@ class SameDifferentPentomino:
 # plt.imshow(xs[0])
 # print(ys)
 
-
-# <codecell>
 
 class SameDifferent:
     def __init__(self, n_symbols=None, task='hard',

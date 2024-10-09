@@ -45,6 +45,7 @@ class TransformerConfig:
     as_rf_model: bool = False
     use_simple_att: bool = False
     freeze_emb: bool = False
+    gamma: float = 1
 
     def to_model(self):
         return Transformer(self)
@@ -138,12 +139,13 @@ class SimpleSelfAttention(nn.Module):
 
         query = query / jnp.sqrt(head_dim)
         attn_weights = jnp.einsum('...qhd,...khd->...hqk', query, key)
-        attn_weights = jax.nn.softmax(attn_weights, axis=-1)
+        # attn_weights = jax.nn.softmax(attn_weights, axis=-1)
 
         self.sow('intermediates', 'attention_weights', attn_weights)
 
         out = jnp.einsum('...hqk,...kd->...qhd', attn_weights, inputs)
-        out = nn.DenseGeneral(features=n_feats, axis=(-2, -1), use_bias=False)(out)
+        # out = nn.DenseGeneral(features=n_feats, axis=(-2, -1), use_bias=False)(out)
+        out = nn.DenseGeneral(features=1, axis=(-2, -1), use_bias=False)(out)
         return out
 
 
@@ -225,12 +227,41 @@ class Transformer(nn.Module):
         if config.use_last_index_output:
             return y[:,-1,-1]
 
-        logits = nn.Dense(config.n_out, use_bias=False)(y)
+        # logits = nn.Dense(config.n_out, use_bias=False)(y)
+        logits = y
         if config.return_final_logits_only:
             logits = logits[:,-1,:]
 
             if config.n_out == 1:
                 logits = logits.flatten()
 
-        return logits
+        return logits / self.config.gamma
 
+
+@struct.dataclass
+class SimpleTransformerConfig:
+
+    n_hidden: int = 128
+    gamma: float = 1
+
+    def to_model(self):
+        return SimpleTransformer(self)
+
+
+class SimpleTransformer(nn.Module):
+
+    config: SimpleTransformerConfig
+
+    @nn.compact
+    def __call__(self, inputs):
+        assert inputs.ndim == 3  # batch x len x features
+
+        x = nn.Dense(self.config.n_hidden, use_bias=False)(inputs)
+        x = nn.relu(x)  # batch x len x hidden
+
+        att = jnp.einsum('bih,bjh->bij', x, x)
+        final_att = att[...,-1]  # batch x len
+        x = jnp.einsum('bl,blh->blh', final_att, x)
+
+        x = nn.DenseGeneral(1, axis=(-2, -1), use_bias=False)(x)
+        return x.flatten() / self.config.gamma

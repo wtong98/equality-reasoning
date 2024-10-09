@@ -19,7 +19,7 @@ from common import *
 from train import *
 from model.mlp import MlpConfig
 from model.transformer import TransformerConfig
-from task.same_different import SameDifferentPentomino
+from task.same_different import SameDifferentPentomino, SameDifferentPsvrt, gen_patches
 from task.pentomino import pieces
 
 # <codecell>
@@ -134,8 +134,13 @@ n_train = 16
 ps_train = ps[:n_train]
 ps_test = ps[n_train:]
 
-train_task = SameDifferentPentomino(ps=ps_train, width=width, batch_size=128, blur=0, random_blur=True)
-test_task = SameDifferentPentomino(ps=ps_test, width=width, batch_size=128, blur=0)
+# train_task = SameDifferentPentomino(ps=ps_train, width=width, batch_size=128, blur=0, random_blur=True)
+# test_task = SameDifferentPentomino(ps=ps_test, width=width, batch_size=128, blur=0)
+
+test_set = gen_patches(patch_size=4)
+train_task = SameDifferentPsvrt(patch_size=4, n_patches=50, exc_set=test_set)
+test_task = SameDifferentPsvrt(patch_size=4, n_patches=50, inc_set=test_set)
+
 
 gamma0 = 10
 lr = gamma0 * 0.1
@@ -167,7 +172,7 @@ state, hist = train(config,
                     test_iter=iter(test_task), 
                     loss='bce',
                     test_every=1000,
-                    train_iters=10_000, 
+                    train_iters=100_000, 
                     optim=optax.sgd,  # NOTE: sharp contrast in using adam vs sgd
                     seed=None,
                     # lr=1e-4
