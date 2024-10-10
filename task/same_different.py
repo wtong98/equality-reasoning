@@ -47,11 +47,6 @@ class SameDifferentPsvrt:
         self.slack = 10   # extra chances for exc generation
         self.max_retry = 5
 
-        # self.exc_set = None
-        # if exc_set is not None:
-        #     self.exc_set = {tuple(e) for e in exc_set}
-
-
     def __next__(self):
         xs = np.zeros((self.batch_size, self.n_patches * self.patch_size, self.n_patches * self.patch_size))
         ys = self.rng.binomial(n=1, p=0.5, size=(self.batch_size + self.slack,))
@@ -66,7 +61,6 @@ class SameDifferentPsvrt:
             
             xs_patches = self.inc_set[xs_idxs]
         
-        # TODO: test exc_set logic carefully <-- STOPPED HERE
         elif self.exc_set is not None:
             for _ in range(self.max_retry):
                 xs_patches = gen_patches(self.patch_size, n_examples=2*(self.batch_size + self.slack))
@@ -79,8 +73,8 @@ class SameDifferentPsvrt:
                 excs = np.expand_dims(self.exc_set, axis=(1, 2))
                 comps = (excs == xs_patches).sum(axis=(-2, -1))
                 bad_idxs = (comps == self.patch_size**2).sum(axis=(0, 2)).astype(bool)
-                # print(np.sum(bad_idxs))
                 xs_patches = xs_patches[~bad_idxs]
+                ys = ys[~bad_idxs]
 
                 if len(xs_patches) >= self.batch_size:  
                     break
@@ -90,7 +84,13 @@ class SameDifferentPsvrt:
             ys = ys[:self.batch_size]
 
         else:
-            raise NotImplementedError('specify at least inc_set or exc_set')
+            xs_patches = gen_patches(self.patch_size, n_examples=2*self.batch_size)
+            xs_patches = xs_patches.reshape(-1, 2, self.patch_size, self.patch_size)
+            ys = ys[:self.batch_size]
+
+            if np.sum(ys) > 0:
+                idxs = ys.astype(bool)
+                xs_patches[idxs,1] = xs_patches[idxs,0]  
 
         xs_locs = batch_choice(self.n_patches**2, 2, self.batch_size)
         for x, x_patch, x_loc in zip(xs, xs_patches, xs_locs):

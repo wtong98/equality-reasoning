@@ -30,7 +30,6 @@ class MlpConfig:
     act_fn: str = 'relu'
     layer_norm: bool = False
     mup_scale: bool = False
-    feature_learning_strength: float = 1
     as_rf_model: bool = False
     use_bias: bool = True
 
@@ -57,29 +56,32 @@ class MLP(nn.Module):
             name = None
             if self.config.as_rf_model:
                 name = f'Dense_{i}_freeze'
+            
+            if self.config.mup_scale and i == 0:
+                root_prec = np.sqrt(self.config.n_hidden * x.shape[-1])
+                mup_init = jax.nn.initializers.truncated_normal(1 / root_prec)
+                x = nn.Dense(self.config.n_hidden,
+                               use_bias=self.config.use_bias,
+                               kernel_init=mup_init,
+                               name=name)(x)
+                x = np.sqrt(self.config.n_hidden) * x
 
-            x = nn.Dense(self.config.n_hidden, 
-                         use_bias=self.config.use_bias,
-                         name=name)(x)
+            else:
+                x = nn.Dense(self.config.n_hidden, 
+                            use_bias=self.config.use_bias,
+                            name=name)(x)
 
             if self.config.layer_norm:
                 x = nn.LayerNorm()(x)
 
             x = act_fn(x)
 
-        if self.config.mup_scale:
-            mup_init = jax.nn.initializers.variance_scaling(1/self.config.n_hidden, mode='fan_in', distribution='truncated_normal')
-            out = nn.Dense(self.config.n_out, 
-                           use_bias=self.config.use_bias,
-                           kernel_init=mup_init)(x)
-        else:
-            out = nn.Dense(self.config.n_out,
-                           use_bias=self.config.use_bias)(x)
+        out = nn.Dense(self.config.n_out, use_bias=self.config.use_bias)(x)
 
         if self.config.n_out == 1:
             out = out.flatten()
 
-        return out / self.config.feature_learning_strength
+        return out
 
 
 @struct.dataclass

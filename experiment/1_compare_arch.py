@@ -70,23 +70,23 @@ grid.set(xscale='log')
 plt.savefig('fig/compare_arch_rf_seen.png')
 
 # <codecell>
-n_points = 16
+n_points = 8
 n_dims = 128
 n_hidden = 512
 
-gamma = 1_000_000
+gamma0 = 1e-5
+gamma = gamma0 * np.sqrt(n_hidden)
 # lr = gamma**2 * 0.1
-lr = gamma * 0.1
+lr = gamma0**2 * 0.01
 
 train_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True)
 test_task = SameDifferent(n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
 
-config = MlpConfig(mup_scale=False,
+config = MlpConfig(mup_scale=True,
                    n_out=1, 
                    vocab_size=None, 
                    n_layers=1, 
                    n_hidden=n_hidden, 
-                   feature_learning_strength=gamma,
                    use_bias=False,
                    act_fn='relu')
 
@@ -108,7 +108,7 @@ state, hist = train(config,
                     data_iter=iter(train_task), 
                     test_iter=iter(test_task), 
                     loss='bce',
-                    gamma=None,
+                    gamma=gamma,
                     test_every=1000,
                     train_iters=50_000, 
                     optim=optax.sgd,
@@ -219,3 +219,57 @@ M_r = np.random.randn(512, 512)
 print(np.sum(m[0] @ a))
 print(np.sum(m[0].T @ a))
 np.trace(m[0])
+
+
+# <codecell>
+### COORDINATE CHECKING
+all_norms = []
+
+for n_hidden in [16, 64, 256, 1024]:
+    n_points = 8
+    n_dims = 128
+    # n_hidden = 512
+
+    gamma0 = 0.01
+    gamma = gamma0 * np.sqrt(n_hidden)
+    # lr = gamma**2 * 0.1
+    lr = gamma0**2 * 0.01
+
+    train_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True)
+    test_task = SameDifferent(n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
+
+    config = MlpConfig(mup_scale=True,
+                    n_out=1, 
+                    vocab_size=None, 
+                    n_layers=1, 
+                    n_hidden=n_hidden, 
+                    use_bias=False,
+                    act_fn='relu')
+
+
+    state, hist = train(config,
+                        data_iter=iter(train_task), 
+                        test_iter=iter(test_task), 
+                        loss='bce',
+                        gamma=gamma,
+                        test_every=1000,
+                        train_iters=1, 
+                        optim=optax.sgd,
+                        lr=lr,
+                        seed=None)
+
+    xs, _ = next(train_task)
+    xs = xs.reshape(xs.shape[0], -1)
+
+    jax.tree.map(jnp.shape, state.params)
+
+    W = state.params['Dense_0']['kernel']
+    a = state.params['Dense_1']['kernel']
+    
+    act = xs @ W
+    norm = np.mean(np.linalg.norm(act, axis=1))
+    all_norms.append(norm)
+
+# <codecell>
+plt.plot(all_norms)
+# %%

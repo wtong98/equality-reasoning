@@ -5,7 +5,7 @@ Training utilities
 from dataclasses import dataclass, field
 from functools import partial
 import itertools
-from typing import Iterable
+from typing import Any, Iterable
 
 from flax import struct, traverse_util
 from flax.training import train_state
@@ -38,6 +38,7 @@ class Metrics:
 
 class TrainState(train_state.TrainState):
     metrics: Metrics
+    init_params: Any = None
 
 
 def create_train_state(rng, model, dummy_input, lr=1e-4, optim=optax.adamw, **opt_kwargs):
@@ -54,7 +55,8 @@ def create_train_state(rng, model, dummy_input, lr=1e-4, optim=optax.adamw, **op
         apply_fn=model.apply,
         params=params,
         tx=tx_with_freeze,
-        metrics=Metrics.empty()
+        metrics=Metrics.empty(),
+        init_params=params
     )
 
 def parse_loss_name(loss):
@@ -77,6 +79,11 @@ def train_step(state, batch, gamma=None, loss='bce'):
 
     def loss_fn(params):
         logits = state.apply_fn({'params': params}, x)
+
+        if gamma is not None:
+            logits_init = state.apply_fn({'params': state.init_params}, x)
+            logits = (1 / gamma) * (logits - logits_init)
+
         train_loss = loss_func(logits, labels)
 
         if loss == 'bce' and len(labels.shape) > 1:
@@ -84,15 +91,6 @@ def train_step(state, batch, gamma=None, loss='bce'):
             train_loss = train_loss.mean(axis=-1)
 
         assert len(train_loss.shape) == 1
-
-        # NOTE: numerically unstable
-        if gamma is not None:
-            logits = jax.lax.stop_gradient(logits)
-            log_fac = (1 - labels) * logits * ((1 / gamma) - 1) \
-                        + jax.nn.softplus(logits) \
-                        - jax.nn.softplus((1 / gamma) * logits)
-            train_loss = jnp.exp(log_fac + jnp.log(train_loss))
-
         return train_loss.mean()
     
     grads = jax.grad(loss_fn)(state.params)
