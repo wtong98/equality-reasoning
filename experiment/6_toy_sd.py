@@ -25,21 +25,22 @@ from task.ti import TiTask
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
-n_points = 2048
-n_dims = 64
+n_points = 4
+n_dims = 128
 # n_hidden = 892
-n_hidden = 128
+n_hidden = 512
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
 lr = gamma0 * 1
 
-n_patches = 8
+n_patches = 2
 
 train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128)
 test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
 
 config = MlpConfig(mup_scale=True,
+                #    as_rf_model=True,
                    n_out=1, 
                    vocab_size=None, 
                    n_layers=1, 
@@ -66,7 +67,7 @@ state, hist = train(config,
                     test_iter=iter(test_task), 
                     loss='bce',
                     test_every=1000,
-                    train_iters=100_000, 
+                    train_iters=25_000, 
                     optim=optax.sgd,
                     lr=lr,
                     gamma=gamma,
