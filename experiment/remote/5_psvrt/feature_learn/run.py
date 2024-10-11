@@ -18,7 +18,7 @@ from task.same_different import SameDifferentPsvrt, gen_patches
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 8
+run_split = 9
 
 train_iters = 100_000
 n_hidden = 512
@@ -27,7 +27,7 @@ n_patches = 5
 patch_size = 5
 
 n_trains = [16, 32, 64, 128, 256, 512, 1024, 2048]
-gs = 10**np.linspace(-5, 0, num=6)
+log10_gs = 10**np.linspace(-3, 0, num=7)
 base_lr = 0.01
 
 ### START TEST CONFIGS
@@ -63,16 +63,17 @@ for n_train in n_trains:
             test_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, batch_size=1024)),
     ])
     
-    for gamma0 in gs:
+    for log10_gamma0 in log10_gs:
+        gamma0 = 10**log10_gamma0
         gamma = gamma0 * np.sqrt(n_hidden)
         lr = gamma0**2 * base_lr
 
-        c = Case(f'MLP (gamma0={gamma0})', 
+        c = Case(rf'MLP ($\gamma_0=10^{log10_gamma0}$)', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
             train_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, inc_set=train_set),
             test_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, batch_size=1024),
-            info={'gamma0': gamma0})
+            info={'log10_gamma0': log10_gamma0, 'n_symbols': n_train})
         all_cases.append(c)
 
 all_cases = split_cases(all_cases, run_split)

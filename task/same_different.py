@@ -118,8 +118,6 @@ class SameDifferentPsvrt:
 # import matplotlib.pyplot as plt
 # plt.imshow(xs[0])
 
-# <codecell>
-
 
 class SameDifferentPentomino:
     def __init__(self, ps=None, width=2, blur=0, random_blur=False, batch_size=128):
@@ -179,8 +177,8 @@ class SameDifferentPentomino:
 
 class SameDifferent:
     def __init__(self, n_symbols=None, task='hard',
-                 n_dims=2, thresh=0, radius=1,    # soft/hard params
-                 n_seen=None, sample_seen=True,   # token params
+                 n_dims=2, thresh=0, radius=1, n_patches=2,   # soft/hard params
+                 n_seen=None, sample_seen=True,               # token params
                  seed=None, reset_rng_for_data=True, batch_size=128) -> None:
 
         if task == 'token':
@@ -194,6 +192,7 @@ class SameDifferent:
         self.n_dims = n_dims
         self.thresh = thresh
         self.radius = radius
+        self.n_patches = n_patches
         self.n_seen = n_seen
         self.sample_seen = sample_seen
         self.seed = seed
@@ -236,6 +235,13 @@ class SameDifferent:
         if np.sum(ys) > 0:
             idxs = ys.astype(bool)
             xs[idxs,1] = xs[idxs,0]
+        
+        if self.n_patches > 2:
+            xs_full = np.zeros((self.batch_size, self.n_patches, self.n_dims))
+            patch_idxs = batch_choice(np.arange(self.n_patches), 2, batch_size=self.batch_size, rng=self.rng)
+            xs_full[np.arange(self.batch_size),patch_idxs[:,0]] = xs[:,0]
+            xs_full[np.arange(self.batch_size),patch_idxs[:,1]] = xs[:,1]
+            xs = xs_full
 
         return xs, ys
     
@@ -254,3 +260,11 @@ class SameDifferent:
 
     def __iter__(self):
         return self
+    
+# task = SameDifferent(8, n_dims=4, batch_size=10, n_patches=10)
+# xs, ys = next(task)
+
+# import matplotlib.pyplot as plt
+# plt.imshow(xs[0], vmin=-1, vmax=1)
+# plt.colorbar()
+# ys[0]

@@ -23,6 +23,47 @@ from task.same_different import SameDifferentPentomino, SameDifferentPsvrt, gen_
 from task.pentomino import pieces
 
 # <codecell>
+df = collate_dfs('remote/5_psvrt/feature_learn')
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+
+    return pd.Series([
+        row['name'],
+        len(row['train_task'].inc_set),
+        row['info']['gamma0'] if 'gamma0' in row['info'] else -1,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        max(hist_acc),
+        hist_acc,
+        np.arange(len(row['hist']['test']))
+    ], index=['name', 'n_pieces', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'hist_acc', 'time'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_pieces', 'gamma0'], var_name='acc_type', value_name='acc')
+mdf
+
+gs = sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
+for g in gs.axes.ravel():
+    g.set_xscale('log', base=2)
+
+plt.savefig('fig/psvrt_acc.png')
+
+# <codecell>
+mdf = plot_df.drop(['acc_seen', 'acc_unseen'], axis=1)
+mdf = mdf.explode(['hist_acc', 'time'])
+
+sns.relplot(mdf, x='time', y='hist_acc', hue='name', col='n_pieces', col_wrap=3, kind='line')
+plt.savefig('fig/psvrt_hist.png')
+
+
+# <codecell>
 n_hidden = 512
 n_train = 256
 n_patches = 5

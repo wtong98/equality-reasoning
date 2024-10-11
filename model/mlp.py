@@ -58,13 +58,13 @@ class MLP(nn.Module):
                 name = f'Dense_{i}_freeze'
             
             if self.config.mup_scale and i == 0:
-                root_prec = np.sqrt(self.config.n_hidden * x.shape[-1])
+                root_prec = np.sqrt(self.config.n_hidden)
                 mup_init = jax.nn.initializers.truncated_normal(1 / root_prec)
                 x = nn.Dense(self.config.n_hidden,
                                use_bias=self.config.use_bias,
                                kernel_init=mup_init,
                                name=name)(x)
-                x = np.sqrt(self.config.n_hidden) * x
+                x = np.sqrt(self.config.n_hidden / x.shape[-1]) * x
 
             else:
                 x = nn.Dense(self.config.n_hidden, 
