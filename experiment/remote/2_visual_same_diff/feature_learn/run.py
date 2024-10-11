@@ -26,7 +26,7 @@ train_iters = 100_000
 n_hidden = 512
 
 n_trains = [2, 4, 8, 10, 12, 14, 16]
-log10_gs = 10**np.linspace(-3, 0, num=7)
+log10_gs = np.linspace(-3, 0, num=7)
 base_lr = 0.01
 blur = 0.5
 
@@ -68,7 +68,7 @@ for n_train in n_trains:
         gamma = gamma0 * np.sqrt(n_hidden)
         lr = gamma0**2 * base_lr
 
-        c = Case(rf'MLP ($\gamma_0=10^{log10_gamma0}$)', 
+        c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
             train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
