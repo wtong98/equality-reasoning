@@ -26,8 +26,8 @@ train_iters = 100_000
 n_hidden = 512
 
 n_trains = [2, 4, 8, 10, 12, 14, 16]
-gs = [0.01, 0.1, 1, 10, 100]
-base_lr = 0.1
+log10_gs = 10**np.linspace(-3, 0, num=7)
+base_lr = 0.01
 blur = 0.5
 
 ### START TEST CONFIGS
@@ -35,8 +35,7 @@ blur = 0.5
 # n_hidden = 512
 
 # n_trains = [16]
-# gs = [1]
-# base_lr = 0.1
+# log10_gs = [0]
 ### END TEST CONFIGS
 
 all_cases = []
@@ -46,33 +45,36 @@ for n_train in n_trains:
     train_ps = ps[:n_train]
     test_ps = ps[n_train:]
 
-    for test_blur, random_blur in [(0, True), (blur, False)]:
+    # for test_blur, random_blur in [(0, True), (blur, False)]:
+    test_blur = 0
+    random_blur = True
 
-        all_cases.extend([
-            Case(f'MLP (Adam)', 
-                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-                train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
-                test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
+    all_cases.extend([
+        Case(f'MLP (Adam)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+            train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
+            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
 
-            Case(f'MLP (SGD, lr=1e-3)', 
-                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': 1e-3},
-                train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
-                test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
+        Case(f'MLP (RF)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
+            train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
+            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
+    ])
 
-            Case(f'MLP (RF)', 
-                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
-                train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
-                test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur))
-        ] + [
-                Case(f'MLP (gamma={gamma})', 
-                    MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, feature_learning_strength=gamma),
-                    train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': base_lr * gamma},
-                    train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
-                    test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur))
-            for gamma in gs])
+    for log10_gamma0 in log10_gs:
+        gamma0 = 10**log10_gamma0
+        gamma = gamma0 * np.sqrt(n_hidden)
+        lr = gamma0**2 * base_lr
+
+        c = Case(rf'MLP ($\gamma_0=10^{log10_gamma0}$)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
+            train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
+            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur),
+            info={'log10_gamma0': log10_gamma0})
+        all_cases.append(c)
 
 
 all_cases = split_cases(all_cases, run_split)
@@ -87,7 +89,6 @@ eval_cases(all_cases, eval_task=train_tasks, key_name='acc_seen')
 eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
 
 for case in all_cases:
-    case.info['flops'] = case.get_flops()
     case.state = None
 
 df = pd.DataFrame(all_cases)
