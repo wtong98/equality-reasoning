@@ -18,19 +18,21 @@ from task.same_different import SameDifferentPentomino
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 1
-
-ps = np.random.permutation(np.arange(18))
+run_split = 7
 
 train_iters = 100_000
 n_hidden = 512
 
 n_trains = [2, 4, 8, 10, 12, 14, 16]
 log10_gs = np.linspace(-3, 0, num=7)
-base_lr = 0.01
+base_lr = 1
 blur = 0.5
+test_blur = 0
+random_blur = True
 
 ### START TEST CONFIGS
+# run_split = 1
+
 # train_iters = 1000
 # n_hidden = 512
 
@@ -42,12 +44,10 @@ all_cases = []
 test_tasks = []
 
 for n_train in n_trains:
+    ps = np.random.permutation(np.arange(18))
+
     train_ps = ps[:n_train]
     test_ps = ps[n_train:]
-
-    # for test_blur, random_blur in [(0, True), (blur, False)]:
-    test_blur = 0
-    random_blur = True
 
     all_cases.extend([
         Case(f'MLP (Adam)', 

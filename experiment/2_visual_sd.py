@@ -49,14 +49,14 @@ mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_pieces
 mdf
 
 sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
-plt.savefig('fig/visual_sd_smooth.png')
+plt.savefig('fig/pentomino_acc.png')
 
 # <codecell>
 mdf = plot_df.drop(['acc_seen', 'acc_unseen'], axis=1)
 mdf = mdf.explode(['hist_acc', 'time'])
 
 sns.relplot(mdf, x='time', y='hist_acc', hue='name', col='n_pieces', col_wrap=3, kind='line')
-plt.savefig('fig/visual_sd_acc_curves_smooth.png')
+plt.savefig('fig/pentomino_hist.png')
 
 
 # <codecell>
@@ -134,24 +134,20 @@ n_train = 16
 ps_train = ps[:n_train]
 ps_test = ps[n_train:]
 
-# train_task = SameDifferentPentomino(ps=ps_train, width=width, batch_size=128, blur=0, random_blur=True)
-# test_task = SameDifferentPentomino(ps=ps_test, width=width, batch_size=128, blur=0)
-
-test_set = gen_patches(patch_size=4)
-train_task = SameDifferentPsvrt(patch_size=4, n_patches=50, exc_set=test_set)
-test_task = SameDifferentPsvrt(patch_size=4, n_patches=50, inc_set=test_set)
+train_task = SameDifferentPentomino(ps=ps_train, width=width, batch_size=128, blur=0.5, random_blur=True)
+test_task = SameDifferentPentomino(ps=ps_test, width=width, batch_size=128, blur=0)
 
 
-gamma0 = 10
-lr = gamma0 * 0.1
+gamma0 = 1
+gamma = gamma0 * np.sqrt(n_hidden)
+lr = gamma0 * 1
 
 config = MlpConfig(n_out=1, 
                    vocab_size=None, 
                    n_layers=1, 
                    n_hidden=n_hidden, 
-                  #  use_bias=False,
+                   use_bias=False,
                    act_fn='relu',
-                   feature_learning_strength=gamma0,
                 #    as_rf_model=True
                    )
 
@@ -175,14 +171,8 @@ state, hist = train(config,
                     train_iters=100_000, 
                     optim=optax.sgd,  # NOTE: sharp contrast in using adam vs sgd
                     seed=None,
-                    # lr=1e-4
-                    lr=lr
-                    # lr=optax.schedules.exponential_decay(1e-2, 
-                    #                                      transition_steps=30_000,
-                    #                                      decay_rate=0.9,
-                    #                                      transition_begin=5_000,
-                    #                                      end_value=1e-6)
-                                                         )
+                    gamma=gamma,
+                    lr=lr)
 
 '''
 Observations:
