@@ -28,7 +28,7 @@ patch_size = 5
 
 n_trains = [16, 32, 64, 128, 256, 512, 1024, 2048]
 log10_gs = np.linspace(-3, 0, num=7)
-base_lr = 0.01
+base_lr = 1
 
 ### START TEST CONFIGS
 # run_split = 1

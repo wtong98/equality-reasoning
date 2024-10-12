@@ -25,10 +25,10 @@ from task.ti import TiTask
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
-n_points = 4
-n_dims = 128
+n_points = 512
+n_dims = 16
 # n_hidden = 892
-n_hidden = 512
+n_hidden = 128
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
@@ -40,7 +40,7 @@ train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_point
 test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
 
 config = MlpConfig(mup_scale=True,
-                #    as_rf_model=True,
+                   as_rf_model=True,
                    n_out=1, 
                    vocab_size=None, 
                    n_layers=1, 
@@ -79,6 +79,7 @@ jax.tree.map(jnp.shape, state.params)
 W = state.params['Dense_0']['kernel']
 a = state.params['Dense_1']['kernel']
 
+
 idx = 41
 
 w_sel = W[:,idx].reshape(8, -1)
@@ -111,95 +112,6 @@ print(np.mean(ys[preds==0] == preds[preds==0]))
 print('--')
 print(np.mean(ys))
 print(np.mean(preds))
-
-# %%
-xs_same = np.random.randn(2, n_dims) / np.sqrt(n_dims)
-xs_same[0] = xs_same[1]
-xs_diff = np.random.randn(2, n_dims) / np.sqrt(n_dims)
-
-xs = np.stack([xs_same, xs_diff])
-
-out, feats = state.apply_fn({'params': state.params}, xs, mutable='intermediates')
-# out, feats = state.apply_fn({'params': state.params}, xs, capture_intermediates=True)
-# feats
-print(out)
-
-np.round(feats['intermediates']['TransformerBlock_0']['SimpleSelfAttention_0']['attention_weights'], decimals=3)
-
-# %%
-xs_same = np.random.randn(2, 512) / np.sqrt(512)
-xs_same[0] = xs_same[1]
-xs_diff = np.random.randn(2, 512) / np.sqrt(512)
-
-# M = np.random.randn(32, 32) / np.sqrt(32)
-b = np.random.randn(512) / np.sqrt(512) * 0
-M = m[0]
-# b = np.ones(32) * 1000
-# b = np.ones(32) * 100
-
-# xs_same @ M @ xs_same.T
-
-xs_diff @ M @ xs_diff.T + (xs_diff[0] @ M @ b + xs_diff[1] @ M.T @ b)
-
-# %%
-xs_same = np.random.randn(2, n_dims) / np.sqrt(n_dims)
-xs_same[0] = xs_same[1]
-xs_diff = np.random.randn(2, n_dims) / np.sqrt(n_dims)
-
-W = state.params['Dense_0']['kernel']
-xs_same = xs_same @ W + state.params['Dense_0']['bias']
-xs_diff = xs_diff @ W + state.params['Dense_0']['bias']
-
-# xs_same = xs_same @ W
-# xs_diff = xs_diff @ W
-
-jax.tree.map(np.shape, state.params)
-k = state.params['TransformerBlock_0']['SimpleSelfAttention_0']['key']['kernel']
-q = state.params['TransformerBlock_0']['SimpleSelfAttention_0']['query']['kernel']
-
-m = np.einsum('khe,qhe->hqk', k, q)
-
-xs_diff @ m[0] @ xs_diff.T
-jax.nn.softmax(xs_diff @ m[0] @ xs_diff.T)
-print(xs_diff @ m[0] @ xs_diff.T)
-print('--')
-
-# plt.hist(state.params['Dense_0']['bias'])
-
-b = state.params['Dense_0']['bias']
-b = b.reshape(-1, 1)
-m[1].T @ b
-print(xs_same[:1] @ m[0].T @ b)
-print(xs_same[:1] @ m[0] @ b)
-print('--')
-print(xs_same[:1] @ m[1].T @ b)
-print(xs_same[:1] @ m[1] @ b)
-
-# <codecell>
-# The two heads have vectors that are perfectly anti-aligned
-a = m[0].T @ b
-b = m[1].T @ b
-
-a = a / np.linalg.norm(a)
-b = b / np.linalg.norm(b)
-
-a.T @ b
-
-# TODO: confirm parallel / antiparallel direction dictates classification
-# %%
-xs = feats['intermediates']['TransformerBlock_0']['SimpleSelfAttention_0']['inputs'][0]
-
-xs_same = xs[1]
-
-xs_same @ m[1] @ xs_same.T
-
-# <codecell>
-a = np.random.randn(512, 1)
-M_r = np.random.randn(512, 512)
-
-print(np.sum(m[0] @ a))
-print(np.sum(m[0].T @ a))
-np.trace(m[0])
 
 
 # <codecell>
@@ -255,3 +167,125 @@ for n_patches, n_hidden in zip([2, 4, 8, 16], [16, 64, 256, 1024]):
 # <codecell>
 plt.plot(all_norms, '--o')
 # %%
+### VALIDATION OF RF CALCULATIONS <-- TODO: need to complete (should be correct, 
+# but need to address inconsistencies). May be issue of normalization -- pay attention to how its done exactly
+n_points = 500
+n_hidden = 512
+# n_dimss = np.round(np.linspace(16, 512, num=10)).astype(int)
+# n_dimss = np.array([2, 4, 8, 16, 32, 64, 128, 256, 512])
+n_dimss = np.array([16, 32, 64, 128, 256, 512])
+
+all_avgs = []
+all_avgs_n = []
+
+for n_dims in n_dimss:
+    xs_pos = np.random.randn(n_points, 2*n_dims) / np.sqrt(n_dims)
+    xs_pos[:,:n_dims] = xs_pos[:,n_dims:]
+    # xs_pos = np.sqrt(np.sqrt(2)) * np.random.randn(n_points, 2*n_dims) / np.sqrt(n_dims)
+    xs_neg = np.random.randn(n_points, 2*n_dims) / np.sqrt(n_dims)
+
+    W = np.random.randn(2*n_dims, n_hidden) / np.sqrt(2*n_dims)
+    hp = jax.nn.relu(xs_pos @ W)
+
+    kp = hp @ hp.T
+    kp = np.triu(kp, k=1)
+    # kp = kp[np.nonzero(kp)]
+
+    hn = jax.nn.relu(xs_neg @ W)
+
+    kn = hn @ hn.T
+    kn = np.triu(kn, k=1)
+    # kn = kn[np.nonzero(kn)]
+
+    avg = np.mean(kp)
+
+    all_avgs.append(avg)
+    all_avgs_n.append(np.mean(kn))
+
+plt.loglog(n_dimss, all_avgs, '--o')
+plt.loglog(n_dimss, all_avgs_n, '--o')
+# plt.loglog(n_dimss, 80 / n_dimss)
+# plt.loglog(n_dimss, 80 * np.sqrt(2) / n_dimss)
+
+# <codecell>
+n_points = 1_000
+n_dims = 64
+n_hidden = 10_000
+
+# task = SameDifferent(n_symbols=None, n_dims=n_dims, batch_size=n_points)
+# xs, ys = next(task)
+# xs = xs.reshape(xs.shape[0], -1)
+# xs_pos = xs[ys==1]
+# xs_neg = xs[ys==0]
+
+xs_pos = np.random.randn(n_points, 2*n_dims) / np.sqrt(n_dims)
+xs_pos[:,:n_dims] = xs_pos[:,n_dims:]
+# xs_pos = np.sqrt(np.sqrt(2)) * np.random.randn(n_points, 2*n_dims) / np.sqrt(n_dims)
+xs_neg = np.random.randn(n_points, 2*n_dims) / np.sqrt(n_dims)
+
+# W = np.random.randn(2*n_dims, n_hidden) / np.sqrt(2*n_dims)
+W = np.random.randn(2*n_dims, n_hidden) / np.sqrt(2*n_dims)
+
+xs_pos = jax.nn.relu(xs_pos @ W)
+xs_neg = jax.nn.relu(xs_neg @ W)
+
+dp = np.triu(xs_pos @ xs_pos.T, k=1) / n_hidden
+dp = dp[np.nonzero(dp)]
+dn = np.triu(xs_neg @ xs_neg.T, k=1) / n_hidden
+dn = dn[np.nonzero(dn)]
+
+print(np.var(dp))
+print(2*np.var(dn))
+
+print(np.mean(dp))
+print(np.mean(dn))
+
+# print(np.mean(dp**2))
+# print(np.mean(dn**2))
+
+# dp = dp + dp**2/np.pi
+# dn = dn + dn**2/np.pi
+
+plt.hist(dp, bins=50, density=True, alpha=0.7)
+plt.hist(dn, bins=50, density=True, alpha=0.7)
+
+plt.axvline(x=np.mean(dp))
+plt.axvline(x=np.mean(dn), color='red')
+# plt.hist(dn * np.sqrt(2), bins=50, density=True, alpha=0.3)
+
+
+# <codecell>
+all_dp = []
+all_dn = []
+
+W = np.random.randn(2*n_dims, n_hidden) / np.sqrt(2*n_dims)
+
+for _ in range(n_points):
+    xs_pos = np.random.randn(2, 2*n_dims) / np.sqrt(n_dims)
+    xs_pos[:,:n_dims] = xs_pos[:,n_dims:]
+    xs_neg = np.random.randn(2, 2*n_dims) / np.sqrt(n_dims)
+
+    xs_pos = jax.nn.relu(xs_pos @ W) / n_hidden
+    xs_neg = jax.nn.relu(xs_neg @ W) / n_hidden
+
+    dp = np.triu(xs_pos @ xs_pos.T, k=1)
+    dp = dp[np.nonzero(dp)]
+    dn = np.triu(xs_neg @ xs_neg.T, k=1)
+    dn = dn[np.nonzero(dn)]
+
+    all_dp.append(dp[0])
+    all_dn.append(dn[0])
+
+
+# <codecell>
+plt.hist(all_dp, bins=50, alpha=0.7)
+plt.hist(all_dn, bins=50, alpha=0.7)
+
+plt.axvline(x=np.mean(all_dp))
+plt.axvline(x=np.mean(all_dn), color='red')
+
+# <codecell>
+# u = xs_pos @ xs_pos.T / np.linalg.norm(xs_pos, axis=-1)**2
+# u = u * (1 - 1/np.pi * np.arccos(u)) * (1 / np.pi) * np.sqrt(1 - u**2)
+
+# plt.imshow(u)

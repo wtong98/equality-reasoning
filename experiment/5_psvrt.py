@@ -75,10 +75,10 @@ train_task = SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, inc_
 test_task = SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches)
 
 
-gamma0 = 1
+gamma0 = 0.1
 # gamma = gamma0
 gamma = np.sqrt(n_hidden) * gamma0
-lr = gamma0**2 * 0.01
+lr = gamma0**2 * 1
 
 config = MlpConfig(n_out=1, 
                    mup_scale=True,
