@@ -72,7 +72,7 @@ def summon_dir(path: str, clear_if_exists=False):
     return new_dir
 
 
-def collate_dfs(df_dir, show_progress=False):
+def collate_dfs(df_dir, show_progress=False, concat=True):
     pkl_path = Path(df_dir)
     dfs = []
     if show_progress:
@@ -80,8 +80,10 @@ def collate_dfs(df_dir, show_progress=False):
             dfs.append(pd.read_pickle(f))
     else:
         dfs = [pd.read_pickle(f) for f in pkl_path.iterdir() if f.suffix == '.pkl']
-    df = pd.concat(dfs)
-    return df
+    if concat:
+        dfs = pd.concat(dfs)
+
+    return dfs
 
 
 def uninterleave(interl_xs):

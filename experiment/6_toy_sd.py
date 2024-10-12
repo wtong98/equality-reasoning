@@ -24,6 +24,52 @@ from task.same_different import SameDifferent
 from task.ti import TiTask
 
 # <codecell>
+dfs = collate_dfs('remote/6_toy_sd/data_div', concat=False)
+dfs
+
+# <codecell>
+def extract_plot_vals(row):
+    # hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+
+    return pd.Series([
+        row['name'],
+        # row['info']['gamma0'] if 'gamma0' in row['info'] else -1,
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        # max(hist_acc),
+        # hist_acc,
+        # np.arange(len(row['hist']['test']))
+    ], index=['name', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen'])
+
+plot_dfs = [df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True) for df in dfs]
+plot_df = pd.concat(plot_dfs)
+plot_df
+
+# <codecell>
+mdf = plot_df[plot_df['n_dims'] == 128]
+g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='name', marker='o')
+
+g.set_xscale('log', base=2)
+
+# <codecell>
+threshold = 0.75
+all_mdfs = []
+for mdf in plot_dfs:
+    mdf = mdf[mdf['acc_unseen'] > threshold]
+    mdf = mdf.groupby(['name', 'n_dims']).min()
+    all_mdfs.append(mdf)
+
+mdf = pd.concat(all_mdfs[:2])
+mdf
+
+# <codecell>
+g = sns.lineplot(mdf, x='n_dims', y='n_symbols', hue='name', marker='o')
+g.set_xscale('log', base=2)
+g.set_yscale('log', base=2)
+# <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
 n_points = 512
 n_dims = 16
@@ -169,11 +215,11 @@ plt.plot(all_norms, '--o')
 # %%
 ### VALIDATION OF RF CALCULATIONS <-- TODO: need to complete (should be correct, 
 # but need to address inconsistencies). May be issue of normalization -- pay attention to how its done exactly
-n_points = 500
+n_points = 2048
 n_hidden = 512
 # n_dimss = np.round(np.linspace(16, 512, num=10)).astype(int)
 # n_dimss = np.array([2, 4, 8, 16, 32, 64, 128, 256, 512])
-n_dimss = np.array([16, 32, 64, 128, 256, 512])
+n_dimss = np.array([2, 4, 8, 16, 32, 64, 128])
 
 all_avgs = []
 all_avgs_n = []

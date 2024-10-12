@@ -16,12 +16,12 @@ from task.same_different import SameDifferent
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 3
+run_split = 7
 
-train_iters = 20_000
+train_iters = 100_000
 n_vocab = np.round(2**np.linspace(2, 10, 21)).astype(int)
-n_dims = [2, 4, 8, 16, 32, 64, 128]
-gs = [0.01, 0.1, 1]
+log10_gs = np.linspace(-3, 0, num=7)
+n_dims = [128]
 base_lr = 1
 
 n_layers = 1
@@ -33,7 +33,7 @@ n_hidden = 512
 # train_iters = 2500
 # n_vocab = [4]
 # n_dims = [2]
-# gs = [1]
+# log10_gs = [0]
 ### END TEST CONFIGS
 
 all_cases = []
@@ -57,18 +57,19 @@ for v in n_vocab:
                 test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024)),
         ])
 
-        for g in gs:
-            gamma = g * np.sqrt(n_hidden)
-            lr = g**2 * base_lr
+        for log10_gamma0 in log10_gs:
+            gamma0 = 10**log10_gamma0
+            gamma = gamma0 * np.sqrt(n_hidden)
+            lr = gamma0**2 * base_lr
 
             all_cases.append(
-                Case(rf'MLP ($\gamma_0={g}$)',
+                Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)',
                      MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden),
                      train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce',
                                  'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
                      train_task=SameDifferent(n_symbols=v, n_dims=d),
                      test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024),
-                     info={'gamma0': g})
+                     info={'log10_gamma0': log10_gamma0})
             )
 
 all_cases = split_cases(all_cases, run_split)
@@ -84,7 +85,6 @@ eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
 
 for case in all_cases:
     case.state = None
-    case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
