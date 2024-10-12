@@ -24,7 +24,7 @@ train_iters = 100_000
 n_hidden = 512
 
 n_trains = [2, 4, 8, 10, 12, 14, 16]
-log10_gs = np.linspace(-3, 0, num=7)
+log10_gs = np.linspace(-2, 0, num=9)
 base_lr = 1
 blur = 0.5
 test_blur = 0
