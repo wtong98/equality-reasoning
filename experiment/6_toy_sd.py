@@ -24,29 +24,42 @@ from task.same_different import SameDifferent
 from task.ti import TiTask
 
 # <codecell>
-dfs = collate_dfs('remote/6_toy_sd/data_div', concat=False)
-dfs
+df = collate_dfs('remote/6_toy_sd/data_div', concat=True)
+df
 
 # <codecell>
 def extract_plot_vals(row):
-    # hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+    hist_loss = [m['loss'].item() for m in row['hist']['test']]
 
     return pd.Series([
         row['name'],
-        # row['info']['gamma0'] if 'gamma0' in row['info'] else -1,
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
         row['train_task'].n_symbols,
         row['train_task'].n_dims,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        # max(hist_acc),
-        # hist_acc,
-        # np.arange(len(row['hist']['test']))
-    ], index=['name', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen'])
+        max(hist_acc),
+        min(hist_loss),
+    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen', 'best_acc', 'best_loss'])
 
-plot_dfs = [df.apply(extract_plot_vals, axis=1) \
-            .reset_index(drop=True) for df in dfs]
-plot_df = pd.concat(plot_dfs)
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
 plot_df
+
+# <codecell>
+g = sns.lineplot(plot_df, x='n_symbols', y='best_acc', hue='name', marker='o')
+g.set_xscale('log', base=2)
+
+# <codecell>
+mdf = plot_df[(plot_df['gamma0'] <= -2) & (plot_df['name'] != 'MLP (Adam)')]
+g = sns.lineplot(mdf, x='n_symbols', y='best_loss', hue='name', marker='o')
+g.set_xscale('log', base=2)
+g.set_yscale('log')
+
+# <codecell>
+plot_df['name'].str.contains("gamma")
+
 
 # <codecell>
 mdf = plot_df[plot_df['n_dims'] == 128]

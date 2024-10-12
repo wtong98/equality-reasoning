@@ -16,12 +16,12 @@ from task.same_different import SameDifferent
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 7
+run_split = 9
 
 train_iters = 100_000
 n_vocab = np.round(2**np.linspace(2, 10, 21)).astype(int)
-log10_gs = np.linspace(-3, 0, num=7)
-n_dims = [128]
+log10_gs = np.linspace(-2, 0, num=9)
+n_dims = [2, 4, 8, 16, 32, 64, 128]
 base_lr = 1
 
 n_layers = 1
