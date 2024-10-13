@@ -48,8 +48,22 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
 plot_df
 
 # <codecell>
-g = sns.lineplot(plot_df, x='n_symbols', y='best_acc', hue='name', marker='o')
+mdf = plot_df[plot_df['n_dims'] == 128]
+g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='name', marker='o')
 g.set_xscale('log', base=2)
+
+# <codecell>
+# mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
+adf = plot_df[plot_df['n_symbols'] >= 32]
+
+mdf = adf[(adf['gamma0'] == 0)]
+g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o')
+
+mdf = adf[(adf['gamma0'] == -2)]
+g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', ax=g)
+
+g.set_xscale('log', base=2)
+
 
 # <codecell>
 mdf = plot_df[(plot_df['gamma0'] <= -2) & (plot_df['name'] != 'MLP (Adam)')]

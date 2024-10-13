@@ -22,6 +22,7 @@ from model.transformer import TransformerConfig
 from task.same_different import SameDifferentPentomino, SameDifferentPsvrt, gen_patches
 from task.pentomino import pieces
 
+set_theme()
 # <codecell>
 df = collate_dfs('remote/2_visual_same_diff/feature_learn')
 df
@@ -33,12 +34,13 @@ def extract_plot_vals(row):
     return pd.Series([
         row['name'],
         len(row['train_task'].pieces),
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
         max(hist_acc),
         hist_acc,
         np.arange(len(row['hist']['test']))
-    ], index=['name', 'n_pieces', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'hist_acc', 'time'])
+    ], index=['name', 'n_pieces', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'hist_acc', 'time'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
@@ -50,6 +52,31 @@ mdf
 
 sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
 plt.savefig('fig/pentomino_acc.png')
+
+# <codecell>
+mdf = plot_df[plot_df['name'].str.contains('gamma')]
+mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
+
+g = sns.lineplot(mdf, x='n_pieces', y='acc_unseen_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.3)
+sns.lineplot(mdf2, x='n_pieces', y='acc_unseen_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'])
+
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+g.legend_.set_title('')
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    if 'Adam' in text:
+        t.set_text('Adam')
+    elif 'RF' in text:
+        t.set_text('RF')
+    else:
+        t.set_text(f'$\gamma_0$ = 1e{text}')
+
+g.set_xlabel('# images')
+g.set_ylabel('Test accuracy')
+
+g.figure.savefig('fig/cosyne/pentomino_acc.svg', bbox_inches='tight')
+
 
 # <codecell>
 mdf = plot_df.drop(['acc_seen', 'acc_unseen'], axis=1)

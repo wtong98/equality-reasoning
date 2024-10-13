@@ -22,6 +22,8 @@ from model.transformer import TransformerConfig
 from task.same_different import SameDifferentPentomino, SameDifferentPsvrt, gen_patches
 from task.pentomino import pieces
 
+set_theme()
+
 # <codecell>
 df = collate_dfs('remote/5_psvrt/feature_learn')
 df
@@ -33,7 +35,7 @@ def extract_plot_vals(row):
     return pd.Series([
         row['name'],
         len(row['train_task'].inc_set),
-        row['info']['gamma0'] if 'gamma0' in row['info'] else -1,
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
         max(hist_acc),
@@ -54,6 +56,31 @@ for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
 
 plt.savefig('fig/psvrt_acc.png')
+
+# <codecell>
+mdf = plot_df[plot_df['name'].str.contains('gamma')]
+mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
+
+g = sns.lineplot(mdf, x='n_pieces', y='acc_unseen_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
+sns.lineplot(mdf2, x='n_pieces', y='acc_unseen_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
+g.set_xscale('log', base=2)
+
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+g.legend_.set_title('')
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    if 'Adam' in text:
+        t.set_text('Adam')
+    elif 'RF' in text:
+        t.set_text('RF')
+    else:
+        t.set_text(f'$\gamma_0$ = 1e{text}')
+
+g.set_xlabel('# images')
+g.set_ylabel('Test accuracy')
+g.figure.savefig('fig/cosyne/psvrt_acc.svg', bbox_inches='tight')
+
 
 # <codecell>
 mdf = plot_df.drop(['acc_seen', 'acc_unseen'], axis=1)
