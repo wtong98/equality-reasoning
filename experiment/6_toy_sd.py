@@ -54,7 +54,7 @@ g.set_xscale('log', base=2)
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
-adf = plot_df[plot_df['n_symbols'] >= 32]
+adf = plot_df[plot_df['n_symbols'] >= 32] # <-- control appropriately
 
 mdf = adf[(adf['gamma0'] == 0)]
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o')

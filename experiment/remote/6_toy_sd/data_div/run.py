@@ -18,10 +18,10 @@ print('RUN ID', run_id)
 
 run_split = 9
 
-train_iters = 50_000
+train_iters = 100_000
 n_vocab = 2**np.arange(3, 12)
 log10_gs = np.linspace(-2, 0, num=9)
-n_dims = [8, 16, 32, 64, 128, 256, 512]
+n_dims = [4, 8, 16, 32, 64, 128, 256, 512]
 base_lr = 1
 
 n_layers = 1
@@ -85,6 +85,7 @@ eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
 
 for case in all_cases:
     case.state = None
+    case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
