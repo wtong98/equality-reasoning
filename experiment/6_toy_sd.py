@@ -7,6 +7,7 @@ from pathlib import Path
 from flax import traverse_util
 import jax
 import jax.numpy as jnp
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import optax
@@ -23,14 +24,20 @@ from model.transformer import TransformerConfig, SimpleTransformerConfig
 from task.same_different import SameDifferent 
 from task.ti import TiTask
 
+sns.set_theme(style='ticks', font_scale=1.25, rc={
+    'axes.spines.right': False,
+    'axes.spines.top': False,
+    'figure.figsize': (3.5, 3)
+})
+
 # <codecell>
 df = collate_dfs('remote/6_toy_sd/data_div', concat=True)
 df
 
 # <codecell>
 def extract_plot_vals(row):
-    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
-    hist_loss = [m['loss'].item() for m in row['hist']['test']]
+    # hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+    # hist_loss = [m['loss'].item() for m in row['hist']['test']]
 
     return pd.Series([
         row['name'],
@@ -39,30 +46,82 @@ def extract_plot_vals(row):
         row['train_task'].n_dims,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        max(hist_acc),
-        min(hist_loss),
-    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen', 'best_acc', 'best_loss'])
+        # max(hist_acc),
+        # min(hist_loss),
+    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
 # <codecell>
-mdf = plot_df[plot_df['n_dims'] == 128]
-g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='name', marker='o')
+adf = plot_df[plot_df['n_dims'] == 512]
+
+mdf = adf[adf['name'].str.contains('gamma')]
+mdf2 = adf[~adf['name'].str.contains('gamma')]
+
+g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
+sns.lineplot(mdf2, x='n_symbols', y='acc_unseen', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
+
+g.legend_.set_title('')
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    if 'Adam' in text:
+        t.set_text('Adam')
+    elif 'RF' in text:
+        t.set_text('RF')
+    else:
+        t.set_text(f'$\gamma_0$ = 1e{text}')
+
+g.set_xlabel('# symbols')
+g.set_ylabel('Test accuracy')
 g.set_xscale('log', base=2)
+
+g.figure.tight_layout()
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+g.figure.savefig('fig/cosyne/sd_acc.svg', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
-adf = plot_df[plot_df['n_symbols'] >= 32] # <-- control appropriately
+adf = plot_df[plot_df['n_symbols'] >= 0] # <-- control appropriately
 
 mdf = adf[(adf['gamma0'] == 0)]
-g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o')
+g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
-mdf = adf[(adf['gamma0'] == -2)]
-g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', ax=g)
+g.figure.set_size_inches(3.4, 3)
+g.legend_.set_title('# symbols')
+
 
 g.set_xscale('log', base=2)
+
+g.set_xlabel('Input dimensions')
+g.set_ylabel('Test accuracy')
+g.set_title(r'$\gamma_0 = 1$')
+
+g.figure.tight_layout()
+
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+g.figure.savefig('fig/cosyne/sd_rich_dim.svg', bbox_inches='tight')
+
+
+# <codecell>
+mdf = adf[(adf['gamma0'] == -2)]
+# mdf = plot_df[plot_df['name'] == 'RF']
+g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
+
+g.figure.set_size_inches(3.4, 3)
+g.legend_.set_title('# symbols')
+
+g.set_xscale('log', base=2)
+
+g.set_xlabel('Input dimensions')
+g.set_ylabel('Test accuracy')
+g.set_title(r'$\gamma_0 \approx 0$')
+
+g.figure.tight_layout()
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+g.figure.savefig('fig/cosyne/sd_lazy_dim.svg', bbox_inches='tight')
 
 
 # <codecell>
@@ -70,9 +129,6 @@ mdf = plot_df[(plot_df['gamma0'] <= -2) & (plot_df['name'] != 'MLP (Adam)')]
 g = sns.lineplot(mdf, x='n_symbols', y='best_loss', hue='name', marker='o')
 g.set_xscale('log', base=2)
 g.set_yscale('log')
-
-# <codecell>
-plot_df['name'].str.contains("gamma")
 
 
 # <codecell>

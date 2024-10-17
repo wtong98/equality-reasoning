@@ -63,9 +63,10 @@ mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 
 g = sns.lineplot(mdf, x='n_pieces', y='acc_unseen_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
 sns.lineplot(mdf2, x='n_pieces', y='acc_unseen_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
+
+g.figure.set_size_inches(3.5, 3)
 g.set_xscale('log', base=2)
 
-sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.legend_.set_title('')
 
 for t in g.legend_.get_texts():
@@ -77,8 +78,12 @@ for t in g.legend_.get_texts():
     else:
         t.set_text(f'$\gamma_0$ = 1e{text}')
 
-g.set_xlabel('# images')
+g.set_xlabel('# shapes')
 g.set_ylabel('Test accuracy')
+
+g.figure.tight_layout()
+
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/cosyne/psvrt_acc.svg', bbox_inches='tight')
 
 
