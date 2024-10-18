@@ -19,9 +19,11 @@ print('RUN ID', run_id)
 run_split = 12
 
 train_iters = 100_000
-n_vocab = 2**np.arange(3, 14)
-log10_gs = np.linspace(-2, 0, num=3)
-n_dims = [4, 8, 16, 32, 64, 128, 256, 512]
+n_vocab = 2**np.arange(3, 16)
+# log10_gs = np.linspace(-2, 0, num=3)
+log10_gs = []
+# n_dims = [4, 8, 16, 32, 64, 128, 256, 512]
+n_dims = [64]
 ks = [2, 3, 4, 5, 6, 7, 8]
 base_lr = 1
 
@@ -74,6 +76,7 @@ for v, d, k in itertools.product(n_vocab, n_dims, ks):
         )
 
 all_cases = split_cases(all_cases, run_split)
+print('CASES', all_cases)
 
 for case in tqdm(all_cases):
     print('RUNNING', case.name)

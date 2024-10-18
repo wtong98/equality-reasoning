@@ -24,11 +24,11 @@ from model.transformer import TransformerConfig, SimpleTransformerConfig
 from task.same_different import SameDifferent 
 from task.ti import TiTask
 
-sns.set_theme(style='ticks', font_scale=1.25, rc={
-    'axes.spines.right': False,
-    'axes.spines.top': False,
-    'figure.figsize': (3.5, 3)
-})
+# sns.set_theme(style='ticks', font_scale=1.25, rc={
+#     'axes.spines.right': False,
+#     'axes.spines.top': False,
+#     'figure.figsize': (3.5, 3)
+# })
 
 # <codecell>
 df = collate_dfs('remote/6_toy_sd/data_div', concat=True)
@@ -123,35 +123,33 @@ g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/cosyne/sd_lazy_dim.svg', bbox_inches='tight')
 
+# <codecell>
+df = collate_dfs('remote/6_toy_sd/big_k', concat=True)
+df
 
 # <codecell>
-mdf = plot_df[(plot_df['gamma0'] <= -2) & (plot_df['name'] != 'MLP (Adam)')]
-g = sns.lineplot(mdf, x='n_symbols', y='best_loss', hue='name', marker='o')
-g.set_xscale('log', base=2)
-g.set_yscale('log')
+def extract_plot_vals(row):
+    return pd.Series([
+        row['name'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['train_task'].n_patches,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_patches', 'acc_seen', 'acc_unseen'])
 
-
-# <codecell>
-mdf = plot_df[plot_df['n_dims'] == 128]
-g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='name', marker='o')
-
-g.set_xscale('log', base=2)
-
-# <codecell>
-threshold = 0.75
-all_mdfs = []
-for mdf in plot_dfs:
-    mdf = mdf[mdf['acc_unseen'] > threshold]
-    mdf = mdf.groupby(['name', 'n_dims']).min()
-    all_mdfs.append(mdf)
-
-mdf = pd.concat(all_mdfs[:2])
-mdf
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
 
 # <codecell>
-g = sns.lineplot(mdf, x='n_dims', y='n_symbols', hue='name', marker='o')
-g.set_xscale('log', base=2)
-g.set_yscale('log', base=2)
+gs = sns.relplot(plot_df, x='n_symbols', y='acc_unseen', hue='name', col='n_dims', row='n_patches')
+for g in gs.axes.ravel():
+    g.set_xscale('log', base=2)
+
+plt.savefig('fig/sd_patchwise.png')
+
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
 n_points = 512
