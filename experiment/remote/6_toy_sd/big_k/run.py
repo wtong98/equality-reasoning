@@ -19,12 +19,12 @@ print('RUN ID', run_id)
 run_split = 12
 
 train_iters = 100_000
-n_vocab = 2**np.arange(3, 16)
+n_vocab = 2**np.arange(3, 15)
 # log10_gs = np.linspace(-2, 0, num=3)
 log10_gs = []
 # n_dims = [4, 8, 16, 32, 64, 128, 256, 512]
-n_dims = [64]
-ks = [2, 3, 4, 5, 6, 7, 8]
+n_dims = [16, 32, 64, 128, 256]
+ks = [2, 3, 4, 5, 6, 7]
 base_lr = 1
 
 n_layers = 1
@@ -43,15 +43,15 @@ n_hidden = 512
 all_cases = []
 test_tasks = []
 
-for v, d, k in itertools.product(n_vocab, n_dims, ks):
+for d, k, v in itertools.product(n_dims, ks, n_vocab):
     params = {'n_symbols': v, 'n_dims': d}
     
     all_cases.extend([
-        Case(f'RF', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferent(n_patches=k, n_symbols=v, n_dims=d),
-            test_task=SameDifferent(n_patches=k, n_symbols=None, n_dims=d, batch_size=1024)),
+        # Case(f'RF', 
+        #     MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+        #     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+        #     train_task=SameDifferent(n_patches=k, n_symbols=v, n_dims=d),
+        #     test_task=SameDifferent(n_patches=k, n_symbols=None, n_dims=d, batch_size=1024)),
 
         Case(f'Adam', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),

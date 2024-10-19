@@ -124,6 +124,7 @@ sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/cosyne/sd_lazy_dim.svg', bbox_inches='tight')
 
 # <codecell>
+### BIG K EXPERIMENT
 df = collate_dfs('remote/6_toy_sd/big_k', concat=True)
 df
 
@@ -142,6 +143,21 @@ def extract_plot_vals(row):
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
+
+# <codecell>
+mdf = plot_df[plot_df['name'] == 'Adam']
+g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='n_patches', marker='o')
+
+g.set_xscale('log')
+g.figure.savefig('fig/sd_fix_dim_patchwise.png')
+
+# <codecell>
+### BIG_K SWEEP PLOTS
+mdf = plot_df[plot_df['name'] == '$\gamma_0=10^{0.0}$']
+gs = sns.relplot(mdf, x='n_dims', y='acc_seen', hue='n_patches', col='n_symbols', col_wrap=4, kind='line', marker='o')
+
+for g in gs.axes.ravel():
+    g.set_xscale('log', base=2)
 
 # <codecell>
 gs = sns.relplot(plot_df, x='n_symbols', y='acc_unseen', hue='name', col='n_dims', row='n_patches')
