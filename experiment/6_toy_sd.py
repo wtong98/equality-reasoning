@@ -152,10 +152,10 @@ plt.savefig('fig/sd_patchwise.png')
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
-n_points = 512
-n_dims = 16
+n_dims = 128
+n_points = n_dims * 4
 # n_hidden = 892
-n_hidden = 128
+n_hidden = n_dims * 256
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
@@ -166,7 +166,7 @@ n_patches = 2
 train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128)
 test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
 
-config = MlpConfig(mup_scale=True,
+config = MlpConfig(mup_scale=False,
                    as_rf_model=True,
                    n_out=1, 
                    vocab_size=None, 
@@ -195,16 +195,20 @@ state, hist = train(config,
                     loss='bce',
                     test_every=1000,
                     train_iters=25_000, 
-                    optim=optax.sgd,
-                    lr=lr,
-                    gamma=gamma,
+                    # optim=optax.sgd,
+                    # lr=lr,
+                    # gamma=gamma,
                     seed=None)
 
 # <codecell>
 jax.tree.map(jnp.shape, state.params)
 
-W = state.params['Dense_0']['kernel']
-a = state.params['Dense_1']['kernel']
+W = state.params['Dense_0_freeze']['kernel']
+a = state.params['Dense_0']['kernel']
+
+plt.hist(a.flatten(), bins=50)
+# plt.plot(np.sort(a.flatten()))
+# <codecell>
 
 
 idx = 41
@@ -411,8 +415,29 @@ plt.hist(all_dn, bins=50, alpha=0.7)
 plt.axvline(x=np.mean(all_dp))
 plt.axvline(x=np.mean(all_dn), color='red')
 
-# <codecell>
-# u = xs_pos @ xs_pos.T / np.linalg.norm(xs_pos, axis=-1)**2
-# u = u * (1 - 1/np.pi * np.arccos(u)) * (1 / np.pi) * np.sqrt(1 - u**2)
 
-# plt.imshow(u)
+# <codecell>
+### INVESTIGATING MAX DIST
+# reps = 1_000
+# n = 100_000
+# d = 5
+
+# xs = np.random.randn(reps, n) / np.sqrt(d)
+# maxs = np.max(xs, axis=-1)
+# print(np.mean(maxs))
+# print(np.sqrt(2 * np.log(n) / d))
+
+d = 10000
+n = d
+xs = np.random.randn(n) / np.sqrt(d)
+# print(sum(xs > 0))
+
+
+xs = np.sort(xs)
+# xs = xs - 3.5
+plt.plot(xs)
+
+# ss = np.linspace(0, 10_000)
+# plt.loglog(ss, -1/(0.001 * (ss - 10_000)))
+# plt.loglog(ss, -1/(0.001 * (ss - 10_000)))
+
