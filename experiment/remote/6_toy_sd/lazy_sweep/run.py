@@ -42,7 +42,7 @@ n_widths = 2**np.arange(7, 17)
 all_cases = []
 test_tasks = []
 
-for v, d, k, n_hidden in itertools.product(n_vocab, n_dims, ks, n_widths):
+for d, k, n_hidden, v in itertools.product(n_dims, ks, n_widths, n_vocab):
     params = {'n_symbols': v, 'n_dims': d}
     
     all_cases.extend([
