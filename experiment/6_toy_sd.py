@@ -24,12 +24,11 @@ from model.transformer import TransformerConfig, SimpleTransformerConfig
 from task.same_different import SameDifferent 
 from task.ti import TiTask
 
-# sns.set_theme(style='ticks', font_scale=1.25, rc={
-#     'axes.spines.right': False,
-#     'axes.spines.top': False,
-#     'figure.figsize': (3.5, 3)
-# })
-
+sns.set_theme(style='ticks', font_scale=1.25, rc={
+    'axes.spines.right': False,
+    'axes.spines.top': False,
+    'figure.figsize': (5.5, 4)
+})
 # <codecell>
 df = collate_dfs('remote/6_toy_sd/data_div', concat=True)
 df
@@ -80,7 +79,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/sd_acc.svg', bbox_inches='tight')
+g.figure.savefig('fig/cosyne/sd_acc.png ', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -89,7 +88,7 @@ adf = plot_df[plot_df['n_symbols'] >= 0] # <-- control appropriately
 mdf = adf[(adf['gamma0'] == 0)]
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
-g.figure.set_size_inches(3.4, 3)
+# g.figure.set_size_inches(3.4, 3)
 g.legend_.set_title('# symbols')
 
 
@@ -102,7 +101,7 @@ g.set_title(r'$\gamma_0 = 1$')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/sd_rich_dim.svg', bbox_inches='tight')
+g.figure.savefig('fig/cosyne/sd_rich_dim.png', bbox_inches='tight')
 
 
 # <codecell>
@@ -110,7 +109,7 @@ mdf = adf[(adf['gamma0'] == -2)]
 # mdf = plot_df[plot_df['name'] == 'RF']
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
-g.figure.set_size_inches(3.4, 3)
+# g.figure.set_size_inches(3.4, 3)
 g.legend_.set_title('# symbols')
 
 g.set_xscale('log', base=2)
@@ -121,7 +120,7 @@ g.set_title(r'$\gamma_0 \approx 0$')
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/sd_lazy_dim.svg', bbox_inches='tight')
+g.figure.savefig('fig/cosyne/sd_lazy_dim.png', bbox_inches='tight')
 
 # <codecell>
 ### BIG K EXPERIMENT
@@ -146,25 +145,89 @@ plot_df
 
 # <codecell>
 mdf = plot_df[plot_df['name'] == 'Adam']
-g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='n_patches', marker='o')
+mdf = mdf[(mdf['n_symbols'] == 64) | (mdf['n_symbols'] == 1024) | (mdf['n_symbols'] == 16384)]
+# g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='n_patches', marker='o')
+gs = sns.relplot(mdf, x='n_dims', y='acc_unseen', hue='n_patches', col='n_symbols', kind='line', marker='o')
 
-g.set_xscale('log')
-g.figure.savefig('fig/sd_fix_dim_patchwise.png')
+for g in gs.axes.ravel():
+    g.set_xscale('log', base=2)
+
+gs.figure.savefig('fig/sd_adam_patchwise.png')
 
 # <codecell>
 ### BIG_K SWEEP PLOTS
-mdf = plot_df[plot_df['name'] == '$\gamma_0=10^{0.0}$']
-gs = sns.relplot(mdf, x='n_dims', y='acc_seen', hue='n_patches', col='n_symbols', col_wrap=4, kind='line', marker='o')
+# mdf = plot_df[plot_df['name'] == '$\gamma_0=10^{0.0}$']
+# gs = sns.relplot(mdf, x='n_dims', y='acc_seen', hue='n_patches', col='n_symbols', col_wrap=4, kind='line', marker='o')
 
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
+# for g in gs.axes.ravel():
+#     g.set_xscale('log', base=2)
+
+# # <codecell>
+# gs = sns.relplot(plot_df, x='n_symbols', y='acc_unseen', hue='name', col='n_dims', row='n_patches')
+# for g in gs.axes.ravel():
+#     g.set_xscale('log', base=2)
+
+# plt.savefig('fig/sd_patchwise.png')
+
 
 # <codecell>
-gs = sns.relplot(plot_df, x='n_symbols', y='acc_unseen', hue='name', col='n_dims', row='n_patches')
+### LAZY SWEEP EXPERIMENT
+df = collate_dfs('remote/6_toy_sd/lazy_sweep', concat=True)
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    return pd.Series([
+        row['name'],
+        row['config']['n_hidden'],
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+    ], index=['name', 'n_hidden', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[(mdf['n_hidden'] == 256) | (mdf['n_hidden'] == 4096) | (mdf['n_hidden'] == 65536)]
+
+gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='n_dims', col='n_hidden', kind='line', marker='o', legend='full', hue_norm=mpl.colors.LogNorm())
+
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
 
-plt.savefig('fig/sd_patchwise.png')
+plt.savefig('fig/lazy_sweep_sel.png')
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[mdf['n_hidden'] == 65536]
+
+mdf = mdf[['n_symbols', 'n_dims', 'acc_unseen']]
+mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
+mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_unseen')
+
+g = sns.heatmap(mdf)
+xs = 2**np.linspace(-5, 8)
+g.plot(xs, xs)
+
+g.figure.savefig('fig/lazy_sweep_ndim_v_nsym.png')
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[mdf['n_symbols'] == 16384]
+
+mdf = mdf[['n_hidden', 'n_dims', 'acc_unseen']]
+mdf = mdf.groupby(['n_hidden', 'n_dims'], as_index=False).mean()
+mdf = mdf.pivot(index='n_hidden', columns='n_dims', values='acc_unseen')
+
+g = sns.heatmap(mdf)
+xs = 2**np.linspace(0, 8)
+g.plot(xs, xs-1)
+
+g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2

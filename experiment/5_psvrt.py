@@ -25,6 +25,14 @@ from task.pentomino import pieces
 set_theme()
 
 # <codecell>
+task = SameDifferentPsvrt(patch_size=5, n_patches=5)
+xs, ys = next(task)
+plt.imshow(xs[0], cmap='plasma')
+plt.gca().set_axis_off()
+
+plt.savefig('fig/psvrt_same_eg.png')
+
+# <codecell>
 df = collate_dfs('remote/5_psvrt/feature_learn')
 df
 
@@ -64,7 +72,7 @@ mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 g = sns.lineplot(mdf, x='n_pieces', y='acc_unseen_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
 sns.lineplot(mdf2, x='n_pieces', y='acc_unseen_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
 
-g.figure.set_size_inches(3.5, 3)
+g.figure.set_size_inches(5, 4)
 g.set_xscale('log', base=2)
 
 g.legend_.set_title('')
@@ -84,7 +92,7 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/psvrt_acc.svg', bbox_inches='tight')
+g.figure.savefig('fig/cosyne/psvrt_acc.png', bbox_inches='tight')
 
 
 # <codecell>

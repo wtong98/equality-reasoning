@@ -23,6 +23,14 @@ from task.same_different import SameDifferentPentomino, SameDifferentPsvrt, gen_
 from task.pentomino import pieces
 
 set_theme()
+
+# <codecell>
+task = SameDifferentPentomino()
+xs, ys = next(task)
+plt.imshow(xs[0])
+plt.gca().set_axis_off()
+plt.savefig('fig/pentomino_diff_eg.png')
+
 # <codecell>
 df = collate_dfs('remote/2_visual_same_diff/feature_learn')
 df
@@ -60,7 +68,7 @@ mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 g = sns.lineplot(mdf, x='n_pieces', y='acc_unseen_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.3)
 sns.lineplot(mdf2, x='n_pieces', y='acc_unseen_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'])
 
-g.figure.set_size_inches(3.5, 3)
+g.figure.set_size_inches(5, 4)
 
 g.legend_.set_title('')
 
@@ -79,7 +87,7 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/pentomino_acc.svg', bbox_inches='tight')
+g.figure.savefig('fig/cosyne/pentomino_acc.png', bbox_inches='tight')
 
 
 # <codecell>

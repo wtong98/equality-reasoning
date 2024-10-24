@@ -39,25 +39,25 @@ pos_idx = ys.astype(bool)
 xs_pos = xs[pos_idx]
 xs_neg = xs[~pos_idx]
 
-plt.gcf().set_size_inches(2, 2)
+plt.gcf().set_size_inches(4, 4)
 diff = (xs_pos.T @ xs_pos - xs_neg.T @ xs_neg) / np.sqrt(batch_size)
-plt.imshow(diff, vmin=-1, vmax=1, cmap='bwr')
+plt.imshow(diff, vmin=-1, vmax=1, cmap='plasma')
 plt.colorbar()
 plt.gca().set_axis_off()
 plt.title(r'$X_1^T X_1 - X_0^T X_0$')
 
-plt.savefig('fig/cosyne/xx_true.svg')
+plt.savefig('fig/cosyne/xx_true.png')
 
 # <codecell>
-plt.gcf().set_size_inches(2, 2)
+plt.gcf().set_size_inches(4, 4)
 diff = np.zeros((64, 64))
 diff[0:32,32:64] = np.eye(32)
 diff[32:64,0:32] = np.eye(32)
-plt.imshow(diff, vmin=-1, vmax=1, cmap='bwr')
+plt.imshow(diff, vmin=-1, vmax=1, cmap='plasma')
 
 plt.colorbar()
 plt.gca().set_axis_off()
-plt.savefig('fig/cosyne/xx_ideal.svg')
+plt.savefig('fig/cosyne/xx_ideal.png')
 
 # <codecell>
 ### PARALLEL / ANTI-PARALLEL in SD
@@ -76,7 +76,7 @@ n_patches = 2
 train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128)
 test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
 
-config = MlpConfig(mup_scale=True,
+config = MlpConfig(mup_scale=False,
                    as_rf_model=False,
                    n_out=1, 
                    vocab_size=None, 
@@ -90,10 +90,10 @@ state, hist = train(config,
                     test_iter=iter(test_task), 
                     loss='bce',
                     test_every=1000,
-                    train_iters=5_000, 
-                    optim=optax.sgd,
-                    lr=lr,
-                    gamma=gamma,
+                    train_iters=15_000, 
+                    # optim=optax.sgd,
+                    # lr=lr,
+                    # gamma=gamma,
                     seed=None)
 
 # %%
@@ -111,7 +111,7 @@ cos_dists = np.diag(dots)
 
 # <codecell>
 plt.rcParams.update({'font.size': 14})
-plt.gcf().set_size_inches(3, 2)
+plt.gcf().set_size_inches(6, 4)
 plt.scatter(a[sort_idxs], cos_dists)
 plt.xlabel('$a$')
 plt.ylabel(r'$\cos(\theta)$')
@@ -119,7 +119,7 @@ plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig('fig/cosyne/angles.svg')
+plt.savefig('fig/cosyne/angles.png')
 
 
 # <codecell>
@@ -172,9 +172,9 @@ idxs = [0, 1, -2, -1]
 
 fig, axs = plt.subplots(2, 2)
 for idx, ax in zip(idxs, axs.ravel()):
-    ax.imshow(W_sort[:,idx].reshape(14, 14))
+    ax.imshow(W_sort[:,idx].reshape(14, 14), cmap='plasma', vmin=-2, vmax=2)
     ax.set_axis_off()
     ax.set_title(rf'$a = {a[sort_idxs[idx]]:.2f}$')
 
 fig.tight_layout()
-fig.savefig('fig/cosyne/pentomino_ws.svg')
+fig.savefig('fig/cosyne/pentomino_ws.png')
