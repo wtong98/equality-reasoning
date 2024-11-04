@@ -12,8 +12,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import optax
 import pandas as pd
+from scipy.stats import norm
 import seaborn as sns
 from tqdm import tqdm
+
 
 import sys
 sys.path.append('../')
@@ -102,6 +104,18 @@ g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/cosyne/sd_rich_dim.png', bbox_inches='tight')
+
+# <codecell>
+def pred_acc(n_points, a_raw=1.5):
+    a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
+    pt = n_points * np.sqrt(2 / (np.pi - 2)) * a
+    return norm.cdf(pt)
+
+g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='n_dims', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
+# pts = np.unique(mdf['n_symbols'])
+# g.plot(pts, [pred_acc(p) for p in pts], 'o--')
+
+g.set_xscale('log', base=2)
 
 
 # <codecell>
@@ -231,22 +245,24 @@ g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
-n_dims = 128
-n_points = n_dims * 4
+n_dims = 64
+n_points = 16
+# n_points = np.round(0.5 * n_dims * np.log(n_dims)).astype(int)
+# n_points = n_dims
 # n_hidden = 892
-n_hidden = n_dims * 256
+n_hidden = 1024
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 1
+lr = gamma0 * 10
 
 n_patches = 2
 
-train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128)
-test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
+train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128, noise=1)
+test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024, noise=1)
 
-config = MlpConfig(mup_scale=False,
-                   as_rf_model=True,
+config = MlpConfig(mup_scale=True,
+                   as_rf_model=False,
                    n_out=1, 
                    vocab_size=None, 
                    n_layers=1, 
@@ -273,26 +289,46 @@ state, hist = train(config,
                     test_iter=iter(test_task), 
                     loss='bce',
                     test_every=1000,
-                    train_iters=25_000, 
-                    # optim=optax.sgd,
-                    # lr=lr,
-                    # gamma=gamma,
+                    train_iters=5_000,
+                    # lr=1e-3,
+                    # optim=sign_sgd,
+                    optim=optax.sgd,
+                    lr=lr,
+                    gamma=gamma,
                     seed=None)
 
 # <codecell>
-jax.tree.map(jnp.shape, state.params)
+# TODO: make plot confirming this prediction: vv
+pred_acc(n_points)
 
-W = state.params['Dense_0_freeze']['kernel']
-a = state.params['Dense_0']['kernel']
-
-plt.hist(a.flatten(), bins=50)
-# plt.plot(np.sort(a.flatten()))
 # <codecell>
+# W = state.params['Dense_0_freeze']['kernel']
+# a = state.params['Dense_0']['kernel']
 
+W = state.params['Dense_0']['kernel']
+a = state.params['Dense_1']['kernel'].flatten()
 
-idx = 41
+plt.hist(a, bins=50)
+# plt.plot(np.sort(a.flatten()))
 
-w_sel = W[:,idx].reshape(8, -1)
+# <codecell>
+sort_idxs = np.argsort(a)
+
+W_sort = W[:,sort_idxs]
+w1, w2 = W_sort[:n_dims], W_sort[n_dims:]
+dots = w1.T @ w2 / (np.linalg.norm(w1, axis=0) * np.linalg.norm(w2, axis=0))
+cos_dists = np.diag(dots)
+
+plt.plot(a[sort_idxs], cos_dists, 'o')
+
+# <codecell>
+-np.mean(a[a<0]) / np.mean(a[a>0])
+
+# <codecell>
+sort_idxs = np.argsort(a.flatten())
+idx = sort_idxs[-2]
+
+w_sel = W[:,idx].reshape(4, -1)
 plt.imshow(w_sel @ w_sel.T, vmin=-5, vmax=5, cmap='bwr')
 plt.colorbar()
 
@@ -302,10 +338,6 @@ a[idx]
 w_proj = w_sel @ train_task.symbols.T
 plt.imshow(w_proj[:,:50], cmap='bwr')
 # plt.colorbar()
-
-# <codecell>
-plt.hist(a.flatten(), bins=50)
-
 
 # <codecell>
 xs, ys = next(test_task)

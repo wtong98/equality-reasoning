@@ -1,6 +1,9 @@
 """Same-different tasks"""
 
 # <codecell>
+import functools
+import jax
+import jax.numpy as jnp
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
@@ -24,6 +27,25 @@ def batch_choice(a, n_elem, batch_size, rng=None):
     idxs = rng.permuted(idxs, axis=1)
     idxs = idxs[:,:n_elem]
     return idxs
+
+# v_choice = jax.vmap(lambda k, a, s: jax.random.choice(k, a, shape=s, replace=False), in_axes=[0, 0, None])
+
+# @functools.partial(jax.jit, static_argnums=2)
+# def fast_batch_choice(a, n_elem, batch_size, seed=0):
+#     key = jax.random.PRNGKey(seed)
+#     v_keys = jax.random.split(key, batch_size)
+
+#     idxs = jnp.tile(a, (batch_size, 1))
+#     # return jax.random.choice(key, a[0], replace=True, shape=(n_elem,))
+
+#     return v_choice(v_keys, idxs, (n_elem,))
+    
+
+# a = np.arange(10_000)
+# %timeit batch_choice(a, 2, 3)
+# %timeit fast_batch_choice(a, 2, 3, seed=np.random.randint(0, 10000))
+# jax.random.choice(jax.random.PRNGKey(0), a, shape=(2,), replace=False)
+
 
 def gen_patches(patch_size, n_examples=100, rng=None):
     if rng is None:
@@ -177,7 +199,7 @@ class SameDifferentPentomino:
 
 class SameDifferent:
     def __init__(self, n_symbols=None, task='hard',
-                 n_dims=2, thresh=0, radius=1, n_patches=2,   # soft/hard params
+                 n_dims=2, noise=0, thresh=0, radius=1, n_patches=2,   # soft/hard params
                  n_seen=None, sample_seen=True,               # token params
                  seed=None, reset_rng_for_data=True, batch_size=128) -> None:
 
@@ -190,6 +212,7 @@ class SameDifferent:
         self.n_symbols = n_symbols
         self.task = task
         self.n_dims = n_dims
+        self.noise = noise
         self.thresh = thresh
         self.radius = radius
         self.n_patches = n_patches
@@ -236,6 +259,8 @@ class SameDifferent:
             idxs = ys.astype(bool)
             xs[idxs,1] = xs[idxs,0]
         
+        xs = xs + self.rng.standard_normal(xs.shape) * np.sqrt(self.noise / self.n_dims)
+        
         if self.n_patches > 2:
             xs_full = np.zeros((self.batch_size, self.n_patches, self.n_dims))
             patch_idxs = batch_choice(np.arange(self.n_patches), 2, batch_size=self.batch_size, rng=self.rng)
@@ -261,10 +286,6 @@ class SameDifferent:
     def __iter__(self):
         return self
     
-# task = SameDifferent(8, n_dims=4, batch_size=10, n_patches=10)
+# task = SameDifferent(4096, n_dims=128, batch_size=10, n_patches=2, noise=0.1)
 # xs, ys = next(task)
-
-# import matplotlib.pyplot as plt
-# plt.imshow(xs[0], vmin=-1, vmax=1)
-# plt.colorbar()
-# ys[0]
+# xs
