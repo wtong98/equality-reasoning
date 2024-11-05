@@ -8,6 +8,7 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 import pandas as pd
+from scipy.special import logsumexp
 import seaborn as sns
 from tqdm import tqdm
 
@@ -140,3 +141,70 @@ def sign_sgd(learning_rate):
         scale_by_sign(),
         optax.scale_by_learning_rate(learning_rate)
     )
+
+
+def log_gen_like_same(z1, z2, d, sig2):
+    t1 = -d * (np.log(2 * np.pi) - np.log(d))
+    t2 = (-d/2) * np.log(sig2)
+    t3 = (-d / 2) * np.log(2 + sig2)
+
+    a1 = (1 + sig2) / (2 + sig2)
+    a2 = (np.linalg.norm(z1)**2 + np.linalg.norm(z2)**2)
+    a3 = (2 / (2 + sig2))
+    a4 = np.dot(z1, z2)
+
+    t4 = - d/(2 * sig2)
+    t5 = a1 * a2 - a3 * a4
+
+    t_exp = t4 * t5
+    log_sol = t1 + t2 + t3 + t_exp
+    return log_sol
+
+
+def log_gen_like_diff(z1, z2, d, sig2):
+    t1 = -d * (np.log(2 * np.pi) - np.log(d))
+    t2 = -d * np.log(1 + sig2)
+
+    a1 = 1 / (1 + sig2)
+    a2 = (np.linalg.norm(z1)**2 + np.linalg.norm(z2)**2)
+
+    t4 = - d/2
+    t5 = a1 * a2
+
+    t_exp = t4 * t5
+    log_sol = t1 + t2 + t_exp
+    return log_sol
+
+
+def log_mem_like_same(z1, z2, d, sig2, ss):
+    L = len(ss)
+    t1 = d * (np.log(d) -  np.log(2 * np.pi * sig2))
+
+    a1 = (-d / (2 * sig2))
+    a2 = (1/2) * (np.linalg.norm(z1)**2 + np.linalg.norm(z2)**2)
+    a3 = np.dot(z1, z2)
+
+    p1 = t1 + a1 * (a2 - a3)
+
+    d1 = -d / sig2
+    d2 = ss - (z1 + z2) / 2
+    d_exp = d1 * np.linalg.norm(d2, axis=1)**2
+
+    log_sol = p1 + logsumexp(d_exp) - np.log(L)
+    return log_sol
+
+
+def log_mem_like_diff(z1, z2, d, sig2, ss):
+    L = len(ss)
+    t1 = d * (np.log(d) -  np.log(2 * np.pi * sig2))
+
+    a1 = -d / (2 * sig2)
+    e1s = np.reshape(a1 * np.linalg.norm(ss - z1, axis=1)**2, (-1, 1))
+    e2s = np.reshape(a1 * np.linalg.norm(ss - z2, axis=1)**2, (1, -1))
+
+    prods = e1s + e2s
+    np.fill_diagonal(prods, -np.inf)
+
+    t2 = -np.log(L * (L - 1))
+    log_sol = t1 + t2 + logsumexp(prods)
+    return log_sol

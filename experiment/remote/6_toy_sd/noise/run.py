@@ -18,12 +18,13 @@ print('RUN ID', run_id)
 
 run_split = 9
 
-train_iters = 50_000
-n_vocab = 2**np.arange(3, 10)
-log10_gs = np.linspace(-2, 0, num=3)
+train_iters = 100_000
+n_vocab = 2**np.arange(1, 10)
+log10_gs = np.linspace(-3, 0, num=4)
 n_dims = [16, 64, 256]
-base_lr = 1
-sig2s = [0, 0.1, 0.5, 1, 2, 5]
+base_lr = 10
+# sig2s = [0, 0.1, 0.5, 1, 2, 5]
+sig2s = [0, 0.05, 0.1, 0.2, 0.3, 0.5]
 
 n_layers = 1
 n_hidden = 1024
@@ -41,21 +42,23 @@ n_hidden = 1024
 all_cases = []
 test_tasks = []
 
-for v, d, noise in itertools.product(n_vocab, n_dims, sig2s):
-    params = {'n_symbols': v, 'n_dims': d}
+for d, sig2, v in itertools.product(n_dims, sig2s, n_vocab):
+    noise = sig2 * np.sqrt(n_dims)
     
     all_cases.extend([
         Case(f'RF', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
             train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
+            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
+            info={'sig2': sig2}),
 
         Case(f'Adam', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
             train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
+            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
+            info={'sig2': sig2}),
     ])
 
     for log10_gamma0 in log10_gs:
@@ -70,7 +73,8 @@ for v, d, noise in itertools.product(n_vocab, n_dims, sig2s):
                                 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
                     train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
                     test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
-                    info={'log10_gamma0': log10_gamma0})
+                    info={'log10_gamma0': log10_gamma0,
+                          'sig2': sig2})
         )
 
 all_cases = split_cases(all_cases, run_split)
@@ -86,7 +90,7 @@ eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
 
 for case in all_cases:
     case.state = None
-    case.hist = None
+    # case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
