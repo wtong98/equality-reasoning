@@ -19,13 +19,14 @@ print('RUN ID', run_id)
 run_split = 9
 
 train_iters = 100_000
-n_vocab = 2**np.arange(3, 12)
-log10_gs = np.linspace(-2, 0, num=9)
-n_dims = [4, 8, 16, 32, 64, 128, 256, 512]
-base_lr = 1
+n_vocab = 2**np.arange(1, 10)
+log10_gs = np.linspace(-3, 0, num=4)
+n_dims = [4, 16, 64, 256, 1024]
+n_widths = [16, 64, 256, 1024, 4096, 16_000]
+base_lr = 10
 
 n_layers = 1
-n_hidden = 512
+sig2 = 0.1
 
 ### START TEST CONFIGS
 # run_split = 1
@@ -34,43 +35,43 @@ n_hidden = 512
 # n_vocab = [4]
 # n_dims = [2]
 # log10_gs = [0]
+# n_widths = [256]
 ### END TEST CONFIGS
 
 all_cases = []
 test_tasks = []
 
-for v in n_vocab:
-    for d in n_dims:
-        params = {'n_symbols': v, 'n_dims': d}
-        
-        all_cases.extend([
-            Case(f'RF', 
-                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-                train_task=SameDifferent(n_symbols=v, n_dims=d),
-                test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024)),
+for d, n_hidden, v in itertools.product(n_dims, n_widths, n_vocab):
+    noise = sig2 * np.sqrt(d)
 
-            Case(f'Adam', 
-                MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-                train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-                train_task=SameDifferent(n_symbols=v, n_dims=d),
-                test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024)),
-        ])
+    all_cases.extend([
+        Case(f'RF', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+            train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
+            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
 
-        for log10_gamma0 in log10_gs:
-            gamma0 = 10**log10_gamma0
-            gamma = gamma0 * np.sqrt(n_hidden)
-            lr = gamma0**2 * base_lr
+        Case(f'Adam', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+            train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
+            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
+    ])
 
-            all_cases.append(
-                Case(rf'$\gamma_0=10^{ {log10_gamma0} }$',
-                     MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden),
-                     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce',
-                                 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
-                     train_task=SameDifferent(n_symbols=v, n_dims=d),
-                     test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024),
-                     info={'log10_gamma0': log10_gamma0})
-            )
+    for log10_gamma0 in log10_gs:
+        gamma0 = 10**log10_gamma0
+        gamma = gamma0 * np.sqrt(n_hidden)
+        lr = gamma0**2 * base_lr
+
+        all_cases.append(
+            Case(rf'$\gamma_0=10^{ {log10_gamma0} }$',
+                    MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden),
+                    train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce',
+                                'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
+                    train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
+                    test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
+                    info={'log10_gamma0': log10_gamma0})
+        )
 
 all_cases = split_cases(all_cases, run_split)
 
@@ -85,7 +86,7 @@ eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
 
 for case in all_cases:
     case.state = None
-    case.hist = None
+    # case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
