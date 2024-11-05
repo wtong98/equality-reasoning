@@ -43,7 +43,7 @@ all_cases = []
 test_tasks = []
 
 for d, sig2, v in itertools.product(n_dims, sig2s, n_vocab):
-    noise = sig2 * np.sqrt(n_dims)
+    noise = sig2 * np.sqrt(d)
     
     all_cases.extend([
         Case(f'RF', 
