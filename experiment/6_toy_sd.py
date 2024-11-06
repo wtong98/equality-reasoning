@@ -251,20 +251,21 @@ df
 
 # <codecell>
 def extract_plot_vals(row):
-    # hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
-    # hist_loss = [m['loss'].item() for m in row['hist']['test']]
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+    hist_loss = [m['loss'].item() for m in row['hist']['test']]
 
     return pd.Series([
         row['name'],
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
         row['train_task'].n_symbols,
         row['train_task'].n_dims,
+        row['info']['sig2'],
         row['train_task'].noise,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        # max(hist_acc),
-        # min(hist_loss),
-    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'noise', 'acc_seen', 'acc_unseen'])
+        max(hist_acc),
+        min(hist_loss),
+    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'sig2', 'noise', 'acc_seen', 'acc_unseen', 'acc_best', 'loss_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
@@ -274,7 +275,7 @@ plot_df
 ### COMPUTE BAYESIAN SOLUTIONS
 ds = np.unique(plot_df['n_dims'])
 n_symbols = np.unique(plot_df['n_symbols'])
-sig2s = np.unique(plot_df['noise'])
+sig2s = np.unique(plot_df['sig2'])
 
 n_iters = 3
 
@@ -297,30 +298,36 @@ for _, d, L, sig2 in tqdm(list(itertools.product(
     xs, ys = next(test)
 
     g_preds = []
+    g_logits = []
     m_preds = []
+    m_logits = []
 
     for x in xs:
         z1, z2 = x
         g1 = log_gen_like_same(z1, z2, d, sig2)
         g2 = log_gen_like_diff(z1, z2, d, sig2)
         g_preds.append(1 if g1 > g2 else 0)
+        g_logits.append(g1 - g2)
 
         m1 = log_mem_like_same(z1, z2, d, sig2, task.symbols)
         m2 = log_mem_like_diff(z1, z2, d, sig2, task.symbols)
         m_preds.append(1 if m1 > m2 else 0)
+        m_logits.append(m1 - m2)
 
     all_res.extend([{
         'name': 'Bayes Gen',
         'n_symbols': L,
         'n_dims': d,
-        'noise': sig2_orig,
-        'acc_unseen': np.mean(g_preds == ys)
+        'sig2': sig2_orig,
+        'acc_unseen': np.mean(g_preds == ys),
+        'loss_best': optax.sigmoid_binary_cross_entropy(np.array(g_logits), ys).mean().item()
     }, {
         'name': 'Bayes Mem',
         'n_symbols': L,
         'n_dims': d,
-        'noise': sig2_orig,
-        'acc_unseen': np.mean(m_preds == ys)
+        'sig2': sig2_orig,
+        'acc_unseen': np.mean(m_preds == ys),
+        'loss_best': optax.sigmoid_binary_cross_entropy(np.array(m_logits), ys).mean().item()
     }])
 
 df_bayes = pd.DataFrame(all_res)
@@ -333,32 +340,37 @@ for g in gs.axes.ravel():
 
 
 # <codecell>
-mdf = pd.concat((plot_df, df_bayes))
+mdf = plot_df.copy()
+mdf['acc_unseen'] = mdf['acc_best']
 
-gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='name', col='noise', row='n_dims', kind='line', marker='o')
+mdf = pd.concat((mdf, df_bayes))
+
+mdf = mdf[mdf['sig2'] > 0.05]
+gs = sns.relplot(mdf, x='n_symbols', y='loss_best', hue='name', col='sig2', row='n_dims', kind='line', marker='o')
 
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
+    g.set_yscale('log')
 
-plt.savefig('fig/noise_sweep.png')
+plt.savefig('fig/noise_sweep_same_sig_loss_best_with_bayes.png')
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
 n_dims = 64
-n_points = 128
+n_points = 8
 # n_points = np.round(0.5 * n_dims * np.log(n_dims)).astype(int)
 # n_points = n_dims
 # n_hidden = 892
 n_hidden = 1024
 
-gamma0 = 0.01
+gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
 lr = gamma0**2 * 10
 
 n_patches = 2
 
-train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128, noise=0)
-test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024, noise=0)
+train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128, noise=1.6)
+test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024, noise=1.6)
 
 config = MlpConfig(mup_scale=True,
                    as_rf_model=False,
@@ -388,13 +400,23 @@ state, hist = train(config,
                     test_iter=iter(test_task), 
                     loss='bce',
                     test_every=1000,
-                    train_iters=50_000,
+                    train_iters=5_000,
                     # lr=1e-3,
                     # optim=sign_sgd,
                     optim=optax.sgd,
                     lr=lr,
                     gamma=gamma,
                     seed=None)
+
+# <codecell>
+xs, ys = next(test_task)
+logits = state.apply_fn({'params': state.params}, xs)
+np.mean((logits > 0) == ys)
+
+# print(logits[:10])
+# print(ys[:10])
+
+np.mean(optax.sigmoid_binary_cross_entropy(logits, ys))
 
 # <codecell>
 # TODO: make plot confirming this prediction: vv

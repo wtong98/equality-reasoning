@@ -21,13 +21,14 @@ run_split = 9
 train_iters = 100_000
 n_vocab = 2**np.arange(1, 10)
 log10_gs = np.linspace(-3, 0, num=4)
-n_dims = [16, 64, 256]
+n_dims = [32, 64, 128, 256, 512, 1024]
 base_lr = 10
 # sig2s = [0, 0.1, 0.5, 1, 2, 5]
-sig2s = [0, 0.05, 0.1, 0.2, 0.3, 0.5]
+sig2s = [0, 0.1, 0.2, 0.3, 0.5, 1, 2, 4]
+noise_scale = 1
 
 n_layers = 1
-n_hidden = 1024
+n_hidden = 16_000
 
 ### START TEST CONFIGS
 # run_split = 1
@@ -43,7 +44,7 @@ all_cases = []
 test_tasks = []
 
 for d, sig2, v in itertools.product(n_dims, sig2s, n_vocab):
-    noise = sig2 * np.sqrt(d)
+    noise = sig2 * noise_scale
     
     all_cases.extend([
         Case(f'RF', 
