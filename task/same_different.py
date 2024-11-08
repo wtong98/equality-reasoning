@@ -228,6 +228,9 @@ class SameDifferent:
         if reset_rng_for_data:
             self.rng = np.random.default_rng(None)
     
+    def __repr__(self) -> str:
+        return f'SD(n_symbols={self.n_symbols}, n_dims={self.n_dims}, noise={self.noise}, n_patches={self.n_patches})'
+    
     def __next__(self):
         if self.task == 'soft':
             return self._sample_soft()

@@ -26,6 +26,12 @@ from model.transformer import TransformerConfig, SimpleTransformerConfig
 from task.same_different import SameDifferent 
 from task.ti import TiTask
 
+def pred_acc(n_points, a_raw=1.5):
+    a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
+    pt = n_points * np.sqrt(2 / (np.pi - 2)) * a
+    return norm.cdf(pt)
+
+
 sns.set_theme(style='ticks', font_scale=1.25, rc={
     'axes.spines.right': False,
     'axes.spines.top': False,
@@ -106,11 +112,6 @@ sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/cosyne/sd_rich_dim.png', bbox_inches='tight')
 
 # <codecell>
-def pred_acc(n_points, a_raw=1.5):
-    a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
-    pt = n_points * np.sqrt(2 / (np.pi - 2)) * a
-    return norm.cdf(pt)
-
 g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='n_dims', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 # pts = np.unique(mdf['n_symbols'])
 # g.plot(pts, [pred_acc(p) for p in pts], 'o--')
@@ -276,6 +277,7 @@ plot_df
 ds = np.unique(plot_df['n_dims'])
 n_symbols = np.unique(plot_df['n_symbols'])
 sig2s = np.unique(plot_df['sig2'])
+noise_scale = 1
 
 n_iters = 3
 
@@ -289,7 +291,7 @@ for _, d, L, sig2 in tqdm(list(itertools.product(
 
     sig2_orig = sig2
 
-    sig2 = sig2 * np.sqrt(d)  # adjustment for same variance
+    sig2 = sig2 * noise_scale
 
     task = SameDifferent(n_symbols=L, n_dims=d, noise=sig2)
     test = SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=sig2)
@@ -338,39 +340,63 @@ gs = sns.relplot(df_bayes, x='n_symbols', y='acc_unseen', hue='name', col='noise
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
 
-
 # <codecell>
+bdf = df_bayes[df_bayes['name'] == 'Bayes Gen'].drop('name', axis='columns')
+bdf = bdf.groupby(['n_symbols', 'n_dims', 'sig2']).mean()
+
 mdf = plot_df.copy()
 mdf['acc_unseen'] = mdf['acc_best']
 
+all_bayes_acc = []
+for idxs in mdf[['n_symbols', 'n_dims', 'sig2']].to_numpy():
+    bayes_acc = bdf.loc[idxs[0], idxs[1], idxs[2]]['acc_unseen']
+    all_bayes_acc.append(bayes_acc.item())
+
+all_bayes_acc = np.array(all_bayes_acc)
+
+mdf['acc_gap'] = all_bayes_acc - mdf['acc_unseen']
+
+# <codecell>
 mdf = pd.concat((mdf, df_bayes))
 
-mdf = mdf[mdf['sig2'] > 0.05]
-gs = sns.relplot(mdf, x='n_symbols', y='loss_best', hue='name', col='sig2', row='n_dims', kind='line', marker='o')
+# mdf = mdf[mdf['sig2'] > 0.05]
+gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='name', col='sig2', row='n_dims', kind='line', marker='o')
 
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
-    g.set_yscale('log')
+    # g.set_yscale('log')
 
-plt.savefig('fig/noise_sweep_same_sig_loss_best_with_bayes.png')
+plt.savefig('fig/noise_sweep_diff_sig_best.png')
+
+# <codecell>
+gs = sns.relplot(mdf, x='n_dims', y='acc_gap', hue='name', col='sig2', row='n_symbols', kind='line', marker='o')
+
+for g in gs.axes.ravel():
+    g.set_xscale('log', base=2)
+
+plt.savefig('fig/noise_sweep_diff_sig_best_by_sig_gap.png')
+
+
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
 n_dims = 64
-n_points = 8
+n_points = 5
 # n_points = np.round(0.5 * n_dims * np.log(n_dims)).astype(int)
 # n_points = n_dims
 # n_hidden = 892
 n_hidden = 1024
 
+noise = 0
+
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0**2 * 10
+lr = gamma0 * 10
 
 n_patches = 2
 
-train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128, noise=1.6)
-test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024, noise=1.6)
+train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128, noise=noise)
+test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024, noise=noise)
 
 config = MlpConfig(mup_scale=True,
                    as_rf_model=False,
@@ -408,13 +434,11 @@ state, hist = train(config,
                     gamma=gamma,
                     seed=None)
 
+
 # <codecell>
 xs, ys = next(test_task)
 logits = state.apply_fn({'params': state.params}, xs)
 np.mean((logits > 0) == ys)
-
-# print(logits[:10])
-# print(ys[:10])
 
 np.mean(optax.sigmoid_binary_cross_entropy(logits, ys))
 
@@ -475,6 +499,133 @@ print(np.mean(ys[preds==0] == preds[preds==0]))
 print('--')
 print(np.mean(ys))
 print(np.mean(preds))
+
+# <codecell>
+from scipy.stats import halfnorm
+
+n_iters = 100_000
+a = 1.53
+L = 5
+
+n_samps = np.round(2*L).astype(int)
+# n_samps = np.round(L**2 / 2).astype(int)
+
+s = halfnorm.rvs(0, a, size=(n_iters, n_samps))
+d = halfnorm.rvs(0, 1, size=(n_iters, n_samps))
+
+(np.mean(s.mean(axis=1) - d.mean(axis=1) > 0) + 1) / 2
+
+# <codecell>
+jax.tree.map(jnp.shape, state.params)
+
+W = state.params['Dense_0']['kernel']
+a = state.params['Dense_1']['kernel']
+u, s, vh = np.linalg.svd(W)
+
+plt.plot(s, '--o')
+plt.axvline(x=n_points**2/2)
+# plt.axvline(x=2*n_points-2)
+plt.yscale('log')
+
+# <codecell>
+x = np.random.randn(1000, n_dims * 2) / np.sqrt(n_dims)
+W_r = np.random.randn(*W.shape) / np.sqrt(n_hidden)
+
+a_idxs = np.argsort(a.flatten())
+idx = -1
+
+out = jax.nn.relu(x @ W)
+out_r = jax.nn.relu(x @ W_r)
+
+# out = (x @ W)
+# out_r = (x @ W_r)
+
+plt.hist(  out[:,a_idxs[idx]], bins=30, alpha=0.3, density=True)
+plt.hist(out_r[:,a_idxs[0]], bins=30, alpha=0.3, density=True)
+
+print(a.flatten()[a_idxs[idx]])
+
+xs = np.linspace(-2.5, 2.5, num=1000)
+ys = 0.5 * halfnorm.pdf(xs, loc=0, scale=np.sqrt(2 * n_points / n_dims))
+zs = 0.5 * halfnorm.pdf(xs, loc=0, scale=np.sqrt(2)/np.sqrt(n_hidden))
+
+plt.plot(xs, ys, alpha=0.5)
+plt.plot(xs, zs, alpha=0.5)
+
+plt.ylim(0, 2)
+
+# <codecell>
+samp = out[5,a_idxs[:]]
+plt.hist(samp[samp > 0])
+
+# <codecell>
+W_sort = np.array(W[:,a_idxs])
+a_sort = np.array(a[a_idxs,:])
+
+# W_sort[:,2:-2] = 0
+# W_sort
+
+# <codecell>
+x = np.random.randn(10_000, n_dims * 2) / np.sqrt(n_dims)
+out = jax.nn.relu(x @ W_sort) @ a_sort
+plt.hist(out.flatten())
+np.mean(out < 0)
+
+# <codecell>
+n_iters = 10_000
+
+m = 4
+a_norm = 1.5
+L = 8
+d = 64
+
+# pos_res = halfnorm.rvs(size=(n_iters, m), loc=0, scale=np.sqrt(2 * L / d))
+# neg_res = halfnorm.rvs(size=(n_iters, m), loc=0, scale=a_norm * np.sqrt(2 * L / d))
+
+pos_res = halfnorm.rvs(size=(n_iters, m), loc=0, scale=1)
+neg_res = halfnorm.rvs(size=(n_iters, m), loc=0, scale=a_norm)
+
+res = pos_res.sum(axis=1) - a_norm * neg_res.sum(axis=1)
+plt.hist(res)
+np.mean(res < 0)
+
+# TODO: work out distributions more carefully, try to match them as far as possible
+
+# <codecell>
+all_res = []
+
+for curr_a in a.flatten():
+    res = halfnorm.rvs(size=(n_iters), loc=0, scale=np.abs(curr_a))
+    all_res.append(res)
+
+all_res = np.array(all_res)
+all_res
+# <codecell>
+out = all_res * a
+out = out.sum(axis=0)
+plt.hist(out)
+
+
+
+# <codecell>
+W_norm = W / np.linalg.norm(W, axis=0, keepdims=True)
+W_norm = np.array(W_norm)
+W_sim = W_norm.T @ W_norm
+
+
+# np.fill_diagonal(W_temp, 0)
+
+dd = np.sum(W_sim, axis=1) - np.diag(W_sim)
+W_sim = -W_sim
+np.fill_diagonal(W_sim, dd)
+
+
+
+# <codecell>
+u, s, vh = np.linalg.svd(W_sim)
+plt.plot(s[-50:], '--o')
+# plt.axvline(x=2*n_points)
+
 
 
 # <codecell>

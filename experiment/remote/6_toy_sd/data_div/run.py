@@ -75,6 +75,8 @@ for d, n_hidden, v in itertools.product(n_dims, n_widths, n_vocab):
 
 all_cases = split_cases(all_cases, run_split)
 
+print('CASES', all_cases)
+
 for case in tqdm(all_cases):
     print('RUNNING', case.name)
     case.run()

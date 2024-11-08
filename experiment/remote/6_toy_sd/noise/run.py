@@ -79,6 +79,7 @@ for d, sig2, v in itertools.product(n_dims, sig2s, n_vocab):
         )
 
 all_cases = split_cases(all_cases, run_split)
+print('CASES', all_cases)
 
 for case in tqdm(all_cases):
     print('RUNNING', case.name)
