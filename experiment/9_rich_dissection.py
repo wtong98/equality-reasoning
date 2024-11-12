@@ -20,19 +20,17 @@ from train import *
 from model.mlp import MlpConfig
 from task.same_different import SameDifferent 
 
-n_dims = 128
-n_points = 10
+n_dims = 256
+n_points = 20
 n_hidden = 1024
-
-noise = 0
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 10
+lr = gamma0 * 20
 
 n_patches = 2
 
-train_task = SameDifferent(noise=0.5, n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128)
+train_task = SameDifferent(noise=0, n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128)
 test_task = SameDifferent(noise=0.5, n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
 
 config = MlpConfig(mup_scale=True,
@@ -57,13 +55,151 @@ state, hist = train(config,
                     gamma=gamma,
                     seed=None)
 
-# %%
+# <codecell>
+xs, ys = next(test_task)
+out = state.apply_fn({'params': state.params}, xs)
+preds = (out > 0).astype(bool)
+
+print(np.mean(ys == preds))
+print('---')
+print(np.mean(ys[ys>0] == preds[ys>0]))
+print(np.mean(ys[ys==0] == preds[ys==0]))
+
+print('---')
+print(np.mean(ys[preds>0] == preds[preds>0]))
+print(np.mean(ys[preds==0] == preds[preds==0]))
+
+print('---')
+print(np.mean(ys))
+print(np.mean(preds))
+
+# <codecell>
+### Rich with noise
+a = 1.5
+sig2 = 0.5
+L = n_points
+# L = 20
+
+neg_dim_guess = 1/3
+
+prefactor = np.sqrt(2 / (np.pi - 2))
+
+# t1 = np.sqrt(sig2 + 1) - 1.5 * np.sqrt(sig2)
+t1 = np.sqrt(sig2 + 1) - 1.5 * np.sqrt(sig2 + neg_dim_guess)
+# t1 = np.sqrt(sig2 + 1/np.sqrt(L)) - 1.5 * np.sqrt(sig2)
+# t2 = np.sqrt((a**2 + 1) * sig2 + 1)
+t2 = np.sqrt((a**2 + 1) * sig2 + 1 + a**2 * neg_dim_guess)
+# t2 = np.sqrt((a**2 + 1/np.sqrt(L)) * sig2 + 1)
+t = t1 / t2
+
+z = prefactor * t * np.sqrt(L)
+norm.cdf(z)
+
+# <codecell>
 W = np.array(state.params['Dense_0']['kernel'])
 a = np.array(state.params['Dense_1']['kernel'])
 
 n_iters = 10_000
 xs = np.random.randn(n_iters, 2*n_dims) / np.sqrt(n_dims)
-xs += 100 * np.random.randn(*xs.shape)
+xs[:,:n_dims] = xs[:,n_dims:]
+
+xs += np.random.randn(*xs.shape) * np.sqrt(sig2/n_dims)
+
+out = jax.nn.relu(xs @ W) @ a
+np.mean(out > 0)
+
+# <codecell>
+af = a.flatten()
+sidx = np.argsort(af)
+
+res = xs @ W
+res_p = res[:,sidx[-1]]
+res_n = res[:,sidx[0]]
+
+plt.hist(res_p, bins=30, alpha=0.4, density=True)
+plt.hist(res_n, bins=30, alpha=0.4, density=True)
+
+xlins = np.linspace(-2, 2, 1000)
+
+m = np.mean(res, axis=0)
+s = np.std(res, axis=0)
+
+# ys = norm.pdf(xlins, loc=0, scale=np.sqrt(0.21 * af[sidx[-1]] * 2 * L * (sig2/n_dims + 1/n_dims)))
+# zs = norm.pdf(xlins, loc=0, scale=np.sqrt(0.21 * -af[sidx[0]] * 2 * L * (sig2/n_dims)))
+ys = norm.pdf(xlins, loc=0, scale=np.sqrt(1.1 * 2 * L * (sig2/n_dims + 1/n_dims)))
+zs = norm.pdf(xlins, loc=0, scale=np.sqrt(1.1 * 1.5 * 2 * L * (sig2/n_dims)))
+# ys = norm.pdf(xlins, loc=0, scale=s[sidx[-1]])
+# zs = norm.pdf(xlins, loc=0, scale=s[sidx[0]])
+
+plt.plot(xlins, ys)
+plt.plot(xlins, zs)
+
+# af[sidx[0]] / af[sidx[-1]]
+np.mean(af[af < 0]) / np.mean(af[af > 0])
+
+# <codecell>
+s_p = s[af > 0].mean()
+s_n = s[af < 0].mean()
+
+res = jax.nn.relu(xs @ W)
+res_p = res[:, af > 0].mean(axis=1)
+res_n = res[:, af < 0].mean(axis=1)
+
+plt.hist(res_p, bins=30, alpha=0.4, density=True)
+plt.hist(res_n, bins=30, alpha=0.4, density=True)
+
+xlins = np.linspace(0, 0.1, 1000)
+
+ps = norm.rvs(size=(n_iters, L), loc=0, scale=s_p)
+ps = (np.abs(ps) / 2).mean(axis=1)
+plt.hist(ps, alpha=0.3, bins=30, density=True)
+
+# ps = norm.pdf(xlins, 
+#               loc=np.sqrt(2 / np.pi) * np.sqrt(2 * L) * np.sqrt((sig2 + 1) / n_dims), 
+#               scale=(1 - 2 * np.pi) * 2 * (sig2 + 1) / n_dims)
+
+# ps = norm.pdf(xlins, loc=s_p / np.sqrt(L), scale=s_p / np.sqrt(L))
+
+
+# ys = halfnorm.pdf(xlins, loc=0, scale=np.sqrt(0.17 * af[sidx[-1]] * 2 * L * (sig2/n_dims + 1/n_dims)))
+# zs = halfnorm.pdf(xlins, loc=0, scale=np.sqrt(0.17 * -af[sidx[0]] * 2 * L * (sig2/n_dims)))
+
+# plt.plot(xlins, ps)
+# plt.plot(xlins, zs)
+
+np.mean(res_p - 1.5 * res_n > 0)
+
+# <codecell>
+out = res_p - 1.5 * res_n
+out = out / np.std(out)
+plt.hist(out, bins=30, density=True, alpha=0.3)
+
+np.mean(out)
+
+# t1 = np.sqrt(sig2 + 1) - 1.5 * np.sqrt(sig2)
+# t2 = np.sqrt((1.5**2 + 1) * sig2 + 1)
+# t = t1 / t2
+
+# z = prefactor * t * np.sqrt(L)
+# z
+
+
+# <codecell>
+# def pred_acc(n_points, a_raw=1.5):
+#     a_raw = a_raw**2
+#     a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
+#     pt = np.sqrt(n_points) * np.sqrt(2 / (np.pi - 2)) * a
+#     return norm.cdf(pt)
+
+# pred_acc(8)
+
+# %%
+### Rich no noise case
+W = np.array(state.params['Dense_0']['kernel'])
+a = np.array(state.params['Dense_1']['kernel'])
+
+n_iters = 10_000
+xs = np.random.randn(n_iters, 2*n_dims) / np.sqrt(n_dims)
 
 out = jax.nn.relu(xs @ W) @ a
 np.mean(out < 0)
