@@ -31,13 +31,13 @@ n_layers = 1
 n_hidden = 4096
 
 ### START TEST CONFIGS
-run_split = 1
+# run_split = 1
 
-train_iters = 2500
-n_vocab = [4]
-n_dims = [2]
-log10_gs = [0]
-sig2s = [0]
+# train_iters = 5000
+# n_vocab = [4]
+# n_dims = [128]
+# log10_gs = [0]
+# sig2s = [0]
 ### END TEST CONFIGS
 
 all_cases = []
@@ -53,7 +53,7 @@ for d, sig2, v in itertools.product(n_dims, sig2s, n_vocab):
 
         all_cases.append(
             Case(rf'$\gamma_0=10^{ {log10_gamma0} }$',
-                    MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden),
+                    MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
                     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce',
                                 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
                     train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),

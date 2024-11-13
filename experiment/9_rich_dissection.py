@@ -12,7 +12,6 @@ from scipy.stats import norm, halfnorm
 import seaborn as sns
 from tqdm import tqdm
 
-
 import sys
 sys.path.append('../')
 from common import *
@@ -20,18 +19,19 @@ from train import *
 from model.mlp import MlpConfig
 from task.same_different import SameDifferent 
 
-n_dims = 256
-n_points = 20
-n_hidden = 1024
+# <codecell>
+n_dims = 128
+n_points = 4
+n_hidden = 4096
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 20
+lr = gamma0 * 10
 
 n_patches = 2
 
 train_task = SameDifferent(noise=0, n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128)
-test_task = SameDifferent(noise=0.5, n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
+test_task = SameDifferent(noise=0, n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
 
 config = MlpConfig(mup_scale=True,
                    as_rf_model=False,
@@ -75,26 +75,32 @@ print(np.mean(preds))
 
 # <codecell>
 ### Rich with noise
-a = 1.5
-sig2 = 0.5
-L = n_points
-# L = 20
+def pred_pos_acc(L, sig2, neg_dim_guess_prefac=0):
+    a = 1.4**2  # NOTE: a seems to be an effectively tunable free parameter (not good)
 
-neg_dim_guess = 1/3
+    neg_dim_guess = neg_dim_guess_prefac * (1 + 2*sig2)
+    prefactor = np.sqrt(2 / (np.pi - 2))
 
-prefactor = np.sqrt(2 / (np.pi - 2))
+    t1 = np.sqrt(sig2 + 1) - a * np.sqrt(sig2 + neg_dim_guess)
+    t2 = np.sqrt((a**2 + 1) * sig2 + 1 + a**2 * neg_dim_guess)
+    t = t1 / t2
 
-# t1 = np.sqrt(sig2 + 1) - 1.5 * np.sqrt(sig2)
-t1 = np.sqrt(sig2 + 1) - 1.5 * np.sqrt(sig2 + neg_dim_guess)
-# t1 = np.sqrt(sig2 + 1/np.sqrt(L)) - 1.5 * np.sqrt(sig2)
-# t2 = np.sqrt((a**2 + 1) * sig2 + 1)
-t2 = np.sqrt((a**2 + 1) * sig2 + 1 + a**2 * neg_dim_guess)
-# t2 = np.sqrt((a**2 + 1/np.sqrt(L)) * sig2 + 1)
-t = t1 / t2
+    z = prefactor * t * np.sqrt(L)
+    return norm.cdf(z)
 
-z = prefactor * t * np.sqrt(L)
-norm.cdf(z)
+L = 10
+p = 0
+sig2 = 0.1
+pred_pos_acc(L, sig2, neg_dim_guess_prefac=p)
 
+# <codecell>
+def pred_neg_acc(L, sig2=0, l_adjust=1):  # TODO: incorporate sig2
+    a_raw = 1.5**2
+    a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
+    pt = np.sqrt(L - l_adjust) * np.sqrt(2 / (np.pi - 2)) * a
+    return norm.cdf(pt)
+
+pred_neg_acc(5, l_adjust=1)
 # <codecell>
 W = np.array(state.params['Dense_0']['kernel'])
 a = np.array(state.params['Dense_1']['kernel'])
@@ -295,3 +301,76 @@ plt.hist(samp, bins=20, density=True, alpha=0.5)
 # <codecell>
 res = jax.nn.relu(xs @ W_p).mean(axis=1) - 1.5 * jax.nn.relu(xs @ W_n).mean(axis=1)
 np.mean(res < 0)
+
+# <codecell>
+### VALIDATE WITH EXPERIMENTS
+df = collate_dfs('remote/9_rich_dissection/noise', concat=True)
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+    hist_loss = [m['loss'].item() for m in row['hist']['test']]
+
+    return pd.Series([
+        row['name'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
+        row['info']['sig2'],
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        max(hist_acc),
+        min(hist_loss),
+    ], index=['name', 'gamma0', 'sig2', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen', 'acc_best', 'loss_best'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+def pred_pos_acc(L, sig2, neg_dim_guess_prefac=0):
+    a = 1.4**2  # NOTE: a seems to be an effectively tunable free parameter (not good)
+
+    neg_dim_guess = neg_dim_guess_prefac * (1 + 2*sig2)
+    prefactor = np.sqrt(2 / (np.pi - 2))
+
+    t1 = np.sqrt(sig2 + 1) - a * np.sqrt(sig2 + neg_dim_guess)
+    t2 = np.sqrt((a**2 + 1) * sig2 + 1 + a**2 * neg_dim_guess)
+    t = t1 / t2
+
+    z = prefactor * t * np.sqrt(L)
+    return norm.cdf(z)
+
+def pred_neg_acc(L, sig2=0, l_adjust=1):  # TODO: incorporate sig2
+    a_raw = 1.5**2
+    a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
+    pt = np.sqrt(L - l_adjust) * np.sqrt(2 / (np.pi - 2)) * a
+    return norm.cdf(pt)
+
+def pred_acc(L, sig2):
+    pos_acc = pred_pos_acc(L, sig2)
+    neg_acc = pred_neg_acc(L, sig2)
+
+    return (pos_acc + neg_acc) / 2
+
+
+Ls = np.unique(plot_df['n_symbols'])
+sig2s = np.unique(plot_df['sig2'])
+
+res = []
+for L, sig2 in itertools.product(Ls, sig2s):
+    res.append({
+        'n_symbols': L,
+        'sig2': sig2,
+        'acc_best': pred_acc(L, sig2)
+    })
+
+res_df = pd.DataFrame(res)
+res_df
+
+# <codecell>
+g = sns.lineplot(plot_df, x='n_symbols', y='acc_best', hue='sig2', marker='o')
+sns.lineplot(res_df, x='n_symbols', y='acc_best', hue='sig2')
+
+g.set_xscale('log', base=2)
