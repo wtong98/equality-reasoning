@@ -21,12 +21,12 @@ from task.same_different import SameDifferent
 
 # <codecell>
 n_dims = 128
-n_points = 4
-n_hidden = 4096
+n_points = 256
+n_hidden = 1024
 
-gamma0 = 1
+gamma0 = 1e-5
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 10
+lr = gamma0**2 * 10
 
 n_patches = 2
 
@@ -47,9 +47,21 @@ state, hist = train(config,
                     test_iter=iter(test_task), 
                     loss='bce',
                     test_every=1000,
-                    train_iters=5_000,
+                    train_iters=1,
                     # lr=1e-3,
                     # optim=sign_sgd,
+                    optim=optax.sgd,
+                    lr=lr,
+                    gamma=gamma,
+                    seed=None)
+
+
+state, hist = train(config,
+                    data_iter=iter(train_task), 
+                    test_iter=iter(test_task), 
+                    loss='bce',
+                    test_every=1000,
+                    train_iters=50_000,
                     optim=optax.sgd,
                     lr=lr,
                     gamma=gamma,
@@ -330,7 +342,7 @@ plot_df
 
 # <codecell>
 def pred_pos_acc(L, sig2, neg_dim_guess_prefac=0):
-    a = 1.4**2  # NOTE: a seems to be an effectively tunable free parameter (not good)
+    a = 1.33**2  # NOTE: a seems to be an effectively tunable free parameter (not good)
 
     neg_dim_guess = neg_dim_guess_prefac * (1 + 2*sig2)
     prefactor = np.sqrt(2 / (np.pi - 2))
@@ -349,6 +361,9 @@ def pred_neg_acc(L, sig2=0, l_adjust=1):  # TODO: incorporate sig2
     return norm.cdf(pt)
 
 def pred_acc(L, sig2):
+    if L == 2 and sig2 <= 0.1:
+        return 0.75  # TODO: refine
+
     pos_acc = pred_pos_acc(L, sig2)
     neg_acc = pred_neg_acc(L, sig2)
 
@@ -361,16 +376,19 @@ sig2s = np.unique(plot_df['sig2'])
 res = []
 for L, sig2 in itertools.product(Ls, sig2s):
     res.append({
+        'name': 'prediction',
         'n_symbols': L,
         'sig2': sig2,
-        'acc_best': pred_acc(L, sig2)
+        'acc_best': pred_acc(L, sig2),
+        'acc_unseen': pred_acc(L, sig2)
     })
 
 res_df = pd.DataFrame(res)
 res_df
 
 # <codecell>
-g = sns.lineplot(plot_df, x='n_symbols', y='acc_best', hue='sig2', marker='o')
-sns.lineplot(res_df, x='n_symbols', y='acc_best', hue='sig2')
+mdf = pd.concat((plot_df, res_df))
+gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', col='sig2', col_wrap=4, hue='name', marker='o', kind='line')
+gs.set(xscale='log')
 
-g.set_xscale('log', base=2)
+plt.savefig('fig/rich_prediction.png')

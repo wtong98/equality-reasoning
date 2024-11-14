@@ -41,7 +41,7 @@ class TrainState(train_state.TrainState):
     init_params: Any = None
 
 
-def create_train_state(rng, model, dummy_input, lr=1e-4, optim=optax.adamw, **opt_kwargs):
+def create_train_state(rng, model, dummy_input, gamma=None, lr=1e-4, optim=optax.adamw, **opt_kwargs):
     params = model.init(rng, dummy_input)['params']
     tx = optim(learning_rate=lr, **opt_kwargs)
 
@@ -51,12 +51,21 @@ def create_train_state(rng, model, dummy_input, lr=1e-4, optim=optax.adamw, **op
          traverse_util.path_aware_map(lambda path, _: 'freeze' if np.any([s.endswith('freeze') for s in path]) else 'learn', params)
     )
 
+    def apply_fn(variables, *args, **kwargs):
+        logits = model.apply(variables, *args, **kwargs)
+
+        if gamma is not None:
+            logits_init = model.apply({'params': params}, *args, **kwargs)
+            logits = (1 / gamma) * (logits - logits_init)
+
+        return logits
+
     return TrainState.create(
-        apply_fn=model.apply,
+        apply_fn=apply_fn,
         params=params,
         tx=tx_with_freeze,
-        metrics=Metrics.empty(),
-        init_params=params
+        metrics=Metrics.empty()
+        # init_params=params
     )
 
 def parse_loss_name(loss):
@@ -72,17 +81,17 @@ def parse_loss_name(loss):
     return loss_func
 
 
-@partial(jax.jit, static_argnames=('gamma', 'loss',))
-def train_step(state, batch, gamma=None, loss='bce'):
+@partial(jax.jit, static_argnames=('loss',))
+def train_step(state, batch, loss='bce'):
     x, labels = batch
     loss_func = parse_loss_name(loss)
 
     def loss_fn(params):
         logits = state.apply_fn({'params': params}, x)
 
-        if gamma is not None:
-            logits_init = state.apply_fn({'params': state.init_params}, x)
-            logits = (1 / gamma) * (logits - logits_init)
+        # if gamma is not None:
+        #     logits_init = state.apply_fn({'params': state.init_params}, x)
+        #     logits = (1 / gamma) * (logits - logits_init)
 
         train_loss = loss_func(logits, labels)
 
@@ -140,7 +149,7 @@ def train(config, data_iter,
     model = config.to_model()
 
     samp_x, _ = next(data_iter)
-    state = create_train_state(init_rng, model, samp_x, optim=optim, **opt_kwargs)
+    state = create_train_state(init_rng, model, samp_x, gamma=gamma, optim=optim, **opt_kwargs)
 
     hist = {
         'train': [],
@@ -149,7 +158,7 @@ def train(config, data_iter,
     }
 
     for step, batch in zip(range(train_iters), data_iter):
-        state = train_step(state, batch, loss=loss, gamma=gamma)
+        state = train_step(state, batch, loss=loss)
         state = compute_metrics(state, batch, loss=loss)
 
         if ((step + 1) % test_every == 0) or ((step + 1) == train_iters):

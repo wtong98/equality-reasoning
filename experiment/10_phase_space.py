@@ -1,4 +1,4 @@
-"""Simple SD task"""
+"""Plotting the phase space in the SD task"""
 
 
 # <codecell>
@@ -16,7 +16,6 @@ from scipy.stats import norm
 import seaborn as sns
 from tqdm import tqdm
 
-
 import sys
 sys.path.append('../')
 from common import *
@@ -25,12 +24,6 @@ from model.mlp import MlpConfig
 from model.transformer import TransformerConfig, SimpleTransformerConfig
 from task.same_different import SameDifferent 
 from task.ti import TiTask
-
-def pred_acc(n_points, a_raw=1.5):
-    a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
-    pt = n_points * np.sqrt(2 / (np.pi - 2)) * a
-    return norm.cdf(pt)
-
 
 sns.set_theme(style='ticks', font_scale=1.25, rc={
     'axes.spines.right': False,
