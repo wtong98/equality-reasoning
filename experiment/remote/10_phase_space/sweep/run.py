@@ -20,7 +20,7 @@ run_split = 12
 
 train_iters = 50_000
 n_vocab = [8, 64, 256]
-log10_gs = np.linspace(-5, 3, num=8)
+log10_gs = np.linspace(-5, 3, num=9)
 n_hiddens = [32, 64, 128, 256, 512, 1024, 4096, 8192]
 n_dims = [32, 64, 128, 256, 512]
 sig2s = [0, 0.25, 0.5, 1]

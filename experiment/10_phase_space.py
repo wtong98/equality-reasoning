@@ -30,217 +30,10 @@ sns.set_theme(style='ticks', font_scale=1.25, rc={
     'axes.spines.top': False,
     'figure.figsize': (5.5, 4)
 })
-# <codecell>
-df = collate_dfs('remote/6_toy_sd/data_div', concat=True)
-df
-
-# <codecell>
-def extract_plot_vals(row):
-    # hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
-    # hist_loss = [m['loss'].item() for m in row['hist']['test']]
-
-    return pd.Series([
-        row['name'],
-        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
-        row['train_task'].n_symbols,
-        row['train_task'].n_dims,
-        row['info']['acc_seen'].item(),
-        row['info']['acc_unseen'].item(),
-        # max(hist_acc),
-        # min(hist_loss),
-    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen'])
-
-plot_df = df.apply(extract_plot_vals, axis=1) \
-            .reset_index(drop=True)
-plot_df
-
-# <codecell>
-adf = plot_df[plot_df['n_dims'] == 512]
-
-mdf = adf[adf['name'].str.contains('gamma')]
-mdf2 = adf[~adf['name'].str.contains('gamma')]
-
-g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
-sns.lineplot(mdf2, x='n_symbols', y='acc_unseen', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
-
-g.legend_.set_title('')
-
-for t in g.legend_.get_texts():
-    text = t.get_text()
-    if 'Adam' in text:
-        t.set_text('Adam')
-    elif 'RF' in text:
-        t.set_text('RF')
-    else:
-        t.set_text(f'$\gamma_0$ = 1e{text}')
-
-g.set_xlabel('# symbols')
-g.set_ylabel('Test accuracy')
-g.set_xscale('log', base=2)
-
-g.figure.tight_layout()
-sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/sd_acc.png ', bbox_inches='tight')
-
-# <codecell>
-# mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
-adf = plot_df[plot_df['n_symbols'] >= 0] # <-- control appropriately
-
-mdf = adf[(adf['gamma0'] == 0)]
-g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
-
-# g.figure.set_size_inches(3.4, 3)
-g.legend_.set_title('# symbols')
-
-
-g.set_xscale('log', base=2)
-
-g.set_xlabel('Input dimensions')
-g.set_ylabel('Test accuracy')
-g.set_title(r'$\gamma_0 = 1$')
-
-g.figure.tight_layout()
-
-sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/sd_rich_dim.png', bbox_inches='tight')
-
-# <codecell>
-g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='n_dims', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
-# pts = np.unique(mdf['n_symbols'])
-# g.plot(pts, [pred_acc(p) for p in pts], 'o--')
-
-g.set_xscale('log', base=2)
-
-
-# <codecell>
-mdf = adf[(adf['gamma0'] == -2)]
-# mdf = plot_df[plot_df['name'] == 'RF']
-g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
-
-# g.figure.set_size_inches(3.4, 3)
-g.legend_.set_title('# symbols')
-
-g.set_xscale('log', base=2)
-
-g.set_xlabel('Input dimensions')
-g.set_ylabel('Test accuracy')
-g.set_title(r'$\gamma_0 \approx 0$')
-
-g.figure.tight_layout()
-sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/sd_lazy_dim.png', bbox_inches='tight')
-
-# <codecell>
-### BIG K EXPERIMENT
-df = collate_dfs('remote/6_toy_sd/big_k', concat=True)
-df
-
-# <codecell>
-def extract_plot_vals(row):
-    return pd.Series([
-        row['name'],
-        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
-        row['train_task'].n_symbols,
-        row['train_task'].n_dims,
-        row['train_task'].n_patches,
-        row['info']['acc_seen'].item(),
-        row['info']['acc_unseen'].item(),
-    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_patches', 'acc_seen', 'acc_unseen'])
-
-plot_df = df.apply(extract_plot_vals, axis=1) \
-            .reset_index(drop=True)
-plot_df
-
-# <codecell>
-mdf = plot_df[plot_df['name'] == 'Adam']
-mdf = mdf[(mdf['n_symbols'] == 64) | (mdf['n_symbols'] == 1024) | (mdf['n_symbols'] == 16384)]
-# g = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='n_patches', marker='o')
-gs = sns.relplot(mdf, x='n_dims', y='acc_unseen', hue='n_patches', col='n_symbols', kind='line', marker='o')
-
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
-
-gs.figure.savefig('fig/sd_adam_patchwise.png')
-
-# <codecell>
-### BIG_K SWEEP PLOTS
-# mdf = plot_df[plot_df['name'] == '$\gamma_0=10^{0.0}$']
-# gs = sns.relplot(mdf, x='n_dims', y='acc_seen', hue='n_patches', col='n_symbols', col_wrap=4, kind='line', marker='o')
-
-# for g in gs.axes.ravel():
-#     g.set_xscale('log', base=2)
-
-# # <codecell>
-# gs = sns.relplot(plot_df, x='n_symbols', y='acc_unseen', hue='name', col='n_dims', row='n_patches')
-# for g in gs.axes.ravel():
-#     g.set_xscale('log', base=2)
-
-# plt.savefig('fig/sd_patchwise.png')
-
-
-# <codecell>
-### LAZY SWEEP EXPERIMENT
-df = collate_dfs('remote/6_toy_sd/lazy_sweep', concat=True)
-df
-
-# <codecell>
-def extract_plot_vals(row):
-    return pd.Series([
-        row['name'],
-        row['config']['n_hidden'],
-        row['train_task'].n_symbols,
-        row['train_task'].n_dims,
-        row['info']['acc_seen'].item(),
-        row['info']['acc_unseen'].item(),
-    ], index=['name', 'n_hidden', 'n_symbols', 'n_dims', 'acc_seen', 'acc_unseen'])
-
-plot_df = df.apply(extract_plot_vals, axis=1) \
-            .reset_index(drop=True)
-plot_df
-
-# <codecell>
-mdf = plot_df.copy()
-mdf = mdf[(mdf['n_hidden'] == 256) | (mdf['n_hidden'] == 4096) | (mdf['n_hidden'] == 65536)]
-
-gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='n_dims', col='n_hidden', kind='line', marker='o', legend='full', hue_norm=mpl.colors.LogNorm())
-
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
-
-plt.savefig('fig/lazy_sweep_sel.png')
-
-# <codecell>
-mdf = plot_df.copy()
-mdf = mdf[mdf['n_hidden'] == 65536]
-
-mdf = mdf[['n_symbols', 'n_dims', 'acc_unseen']]
-mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
-mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_unseen')
-
-g = sns.heatmap(mdf)
-xs = 2**np.linspace(-5, 8)
-g.plot(xs, xs)
-
-g.figure.savefig('fig/lazy_sweep_ndim_v_nsym.png')
-
-# <codecell>
-mdf = plot_df.copy()
-mdf = mdf[mdf['n_symbols'] == 16384]
-
-mdf = mdf[['n_hidden', 'n_dims', 'acc_unseen']]
-mdf = mdf.groupby(['n_hidden', 'n_dims'], as_index=False).mean()
-mdf = mdf.pivot(index='n_hidden', columns='n_dims', values='acc_unseen')
-
-g = sns.heatmap(mdf)
-xs = 2**np.linspace(0, 8)
-g.plot(xs, xs-1)
-
-g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
-
 
 # <codecell>
 ### NOISE SWEEP
-df = collate_dfs('remote/6_toy_sd/noise', concat=True)
+df = collate_dfs('remote/10_phase_space/sweep', concat=True)
 df
 
 # <codecell>
@@ -251,6 +44,7 @@ def extract_plot_vals(row):
     return pd.Series([
         row['name'],
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
+        row['config']['n_hidden'],
         row['train_task'].n_symbols,
         row['train_task'].n_dims,
         row['info']['sig2'],
@@ -259,23 +53,46 @@ def extract_plot_vals(row):
         row['info']['acc_unseen'].item(),
         max(hist_acc),
         min(hist_loss),
-    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'sig2', 'noise', 'acc_seen', 'acc_unseen', 'acc_best', 'loss_best'])
+    ], index=['name', 'gamma0', 'n_hidden', 'n_symbols', 'n_dims', 'sig2', 'noise', 'acc_seen', 'acc_unseen', 'acc_best', 'loss_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
 # <codecell>
-p = plot_df['acc_best']
 mdf = plot_df.copy()
-mdf['logit'] = np.log(p / (1 - p + 1e-10))
 
-gs = sns.relplot(mdf, x='n_dims', y='acc_best', hue='name', col='sig2', row='n_symbols', kind='line', marker='o')
+syms = np.sort(np.unique(mdf['n_symbols']))
+sig2s = np.sort(np.unique(mdf['sig2']))
 
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
+fig, axs = plt.subplots(len(syms), len(sig2s), figsize=(10 * len(syms), 4 * len(sig2s)))
 
-plt.savefig('fig/dim_by_acc.png')
+for sym, ax_r in zip(syms, axs):
+    for sig2, ax in zip(sig2s, ax_r):
+        adf = mdf[(mdf['n_symbols'] == sym) & (mdf['sig2'] == sig2)].drop('name', axis='columns')
+
+        adf = adf.groupby(['n_hidden', 'gamma0'], as_index=False)
+        corrs = adf[['n_dims', 'acc_best']].cov().unstack().iloc[:,1]
+        adf = adf.mean()
+        adf['corrs'] = corrs
+
+        adf = adf.pivot(index='gamma0', columns='n_hidden', values='corrs')
+        sns.heatmap(adf, cmap='BrBG', vmin=-30, vmax=30, ax=ax)
+        ax.set_title(f'n_symbols={sym} | sig2={sig2}')
+
+fig.tight_layout()
+plt.savefig('fig/model_space_corr.png')
+
+# <codecell>
+sym = 256
+sig2 = 1
+
+adf = mdf[(mdf['n_symbols'] == sym) & (mdf['sig2'] == sig2)].drop('name', axis='columns')
+
+gs = sns.relplot(adf, x='n_dims', y='acc_best', col='n_hidden', row='gamma0', kind='line')
+gs.set(xscale='log')
+
+plt.savefig(f'fig/test_sym_{sym}_sig2_{sig2}.png')
 
 # <codecell>
 fig, axs = plt.subplots(2, 3, figsize=(12, 8))
