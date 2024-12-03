@@ -3,6 +3,7 @@ __pycache__/
 *.svg
 *.pkl
 fig/
+task/dataset/
 
 # ignore slurm logging outputs
 *.err

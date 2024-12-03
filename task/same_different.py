@@ -1,15 +1,15 @@
 """Same-different tasks"""
 
 # <codecell>
-import functools
-import jax
-import jax.numpy as jnp
+from collections import defaultdict
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
 try:
+    from cifar100 import load_data
     from pentomino import pieces
 except ImportError:
+    from .cifar100 import load_data
     from .pentomino import pieces
 
 pieces = np.array(pieces, dtype='object')
@@ -197,6 +197,52 @@ class SameDifferentPentomino:
 # print(ys)
 
 
+class SameDifferentCifar100:
+    def __init__(self, ps, batch_size=128):
+        self.pieces = np.array(ps)
+
+        self.batch_size = batch_size
+        self.rng = np.random.default_rng(None)
+
+        self.cifar100 = load_data()
+
+        self.label_to_idxs = defaultdict(list)
+        for i, lab in enumerate(self.cifar100['labels']):
+            self.label_to_idxs[lab].append(i)
+        
+    
+    def __next__(self):
+        xs_idxs = batch_choice(self.pieces, 2, self.batch_size)
+
+        ys = self.rng.binomial(n=1, p=0.5, size=(self.batch_size,))
+        if np.sum(ys) > 0:
+            idxs = ys.astype(bool)
+            xs_idxs[idxs,1] = xs_idxs[idxs,0]
+        
+        xs = []
+        for labs in xs_idxs:
+            a, b = labs
+            a = self.rng.choice(self.label_to_idxs[a])
+            b = self.rng.choice(self.label_to_idxs[b])
+
+            x = np.stack((self.cifar100['data'][a], self.cifar100['data'][b]))
+            xs.append(x)
+        
+        return np.stack(xs), ys
+
+    def __iter__(self):
+        return self
+
+# task = SameDifferentCifar100(ps=[1,2,3], batch_size=5)
+
+# xs, ys = next(task)
+# xs.shape
+
+# import matplotlib.pyplot as plt
+# plt.imshow(xs[0,0].reshape(32, 32, 3, order='F') + 0.5)
+
+
+# <codecell>
 class SameDifferent:
     def __init__(self, n_symbols=None, task='hard',
                  n_dims=2, noise=0, thresh=0, radius=1, n_patches=2,   # soft/hard params

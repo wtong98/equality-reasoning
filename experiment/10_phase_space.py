@@ -65,23 +65,26 @@ mdf = plot_df.copy()
 syms = np.sort(np.unique(mdf['n_symbols']))
 sig2s = np.sort(np.unique(mdf['sig2']))
 
-fig, axs = plt.subplots(len(syms), len(sig2s), figsize=(10 * len(syms), 4 * len(sig2s)))
+fig, axs = plt.subplots(len(syms), len(sig2s), figsize=(8 * len(syms), 4 * len(sig2s)))
 
 for sym, ax_r in zip(syms, axs):
     for sig2, ax in zip(sig2s, ax_r):
         adf = mdf[(mdf['n_symbols'] == sym) & (mdf['sig2'] == sig2)].drop('name', axis='columns')
+        adf['log_n_dims'] = np.log(adf['n_dims'])
+        adf['log_acc_best'] = np.log(adf['acc_best'])
 
         adf = adf.groupby(['n_hidden', 'gamma0'], as_index=False)
-        corrs = adf[['n_dims', 'acc_best']].cov().unstack().iloc[:,1]
+        corrs = adf[['log_n_dims', 'acc_best']].cov().unstack().iloc[:,1]
+        # corrs = np.log(adf[['n_dims', 'acc_best']]).cov().unstack().iloc[:,1]
         adf = adf.mean()
         adf['corrs'] = corrs
 
         adf = adf.pivot(index='gamma0', columns='n_hidden', values='corrs')
-        sns.heatmap(adf, cmap='BrBG', vmin=-30, vmax=30, ax=ax)
+        sns.heatmap(adf, cmap='BrBG', ax=ax, vmin=-0.2, vmax=0.2)
         ax.set_title(f'n_symbols={sym} | sig2={sig2}')
 
 fig.tight_layout()
-plt.savefig('fig/model_space_corr.png')
+plt.savefig('fig/model_space_corr_log_dims.png')
 
 # <codecell>
 sym = 256
@@ -95,24 +98,26 @@ gs.set(xscale='log')
 plt.savefig(f'fig/test_sym_{sym}_sig2_{sig2}.png')
 
 # <codecell>
-fig, axs = plt.subplots(2, 3, figsize=(12, 8))
-names = np.unique(mdf['name'])
+# COMPARING ACCURACY
+mdf = plot_df.copy()
 
-for name, ax in zip(names, axs.ravel()):
-    adf = mdf[mdf['name'] == name].drop('name', axis='columns')
-    adf = adf.groupby(['n_symbols', 'sig2'], as_index=False)
-    corrs = adf[['n_dims', 'acc_best']].cov().unstack().iloc[:,1]
+syms = np.sort(np.unique(mdf['n_symbols']))
+sig2s = np.sort(np.unique(mdf['sig2']))
 
-    adf = adf.mean()
-    adf['corrs'] = corrs
+fig, axs = plt.subplots(len(syms), len(sig2s), figsize=(8 * len(syms), 4 * len(sig2s)))
 
-    adf = adf.pivot(index='n_symbols', columns='sig2', values='corrs')
-    sns.heatmap(adf, cmap='BrBG', vmin=-20, vmax=20, ax=ax)
-    ax.set_title(name)
+for sym, ax_r in zip(syms, axs):
+    for sig2, ax in zip(sig2s, ax_r):
+        adf = mdf[(mdf['n_symbols'] == sym) & (mdf['sig2'] == sig2)].drop('name', axis='columns')
+        adf = adf.groupby(['n_hidden', 'gamma0'], as_index=False).mean()
+        adf = adf.pivot(index='gamma0', columns='n_hidden', values='acc_best')
+
+        sns.heatmap(adf, cmap='Greys_r', vmin=0.5, vmax=1, ax=ax)
+        ax.set_title(f'n_symbols={sym} | sig2={sig2}')
 
 fig.tight_layout()
-# TODO: should technically be log'd then covarianced
-plt.savefig('fig/acc_covariance.png')
+plt.savefig('fig/model_space_acc.png')
+
 
 # <codecell>
 len(np.unique(mdf['name']))
