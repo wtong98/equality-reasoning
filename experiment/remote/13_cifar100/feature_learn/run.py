@@ -28,13 +28,13 @@ log10_gs = np.linspace(-3, 0, num=7)
 base_lr = 1
 
 ### START TEST CONFIGS
-run_split = 1
+# run_split = 1
 
-train_iters = 1000
-n_hidden = 512
+# train_iters = 1000
+# n_hidden = 512
 
-n_trains = [16]
-log10_gs = [0]
+# n_trains = [16]
+# log10_gs = [0]
 ### END TEST CONFIGS
 
 all_cases = []
@@ -87,6 +87,10 @@ eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
 
 for case in all_cases:
     case.state = None
+
+    # Tasks take up a lot of memory
+    case.train_task = None
+    case.test_task = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
