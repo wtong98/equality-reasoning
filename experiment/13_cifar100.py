@@ -21,6 +21,33 @@ from model.mlp import MlpConfig
 from task.same_different import SameDifferentCifar100
 
 # <codecell>
+df = collate_dfs('remote/13_cifar100/feature_learn')
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+
+    return pd.Series([
+        row['name'],
+        len(row['train_task'].pieces),
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        max(hist_acc),
+        hist_acc,
+        np.arange(len(row['hist']['test']))
+    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'hist_acc', 'time'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+
+
+
+# <codecell>
 n_hidden = 4096
 
 train_pieces = np.arange(90)
