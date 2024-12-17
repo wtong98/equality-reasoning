@@ -31,12 +31,22 @@ def pred_acc(n_points, a_raw=1.5):
     pt = n_points * np.sqrt(2 / (np.pi - 2)) * a
     return norm.cdf(pt)
 
+def pred_acc2(n_points, a_raw=1.5):
+    a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
+    pt = np.sqrt(2 * n_points) * np.sqrt(2 / (np.pi - 2)) * a
+    return norm.cdf(pt)
+
 
 sns.set_theme(style='ticks', font_scale=1.25, rc={
     'axes.spines.right': False,
     'axes.spines.top': False,
     'figure.figsize': (5.5, 4)
 })
+
+(pred_acc2(3) + 1) / 2
+
+# pred_acc(5)
+
 # <codecell>
 df = collate_dfs('remote/6_toy_sd/data_div', concat=True)
 df
@@ -415,8 +425,8 @@ plt.savefig('fig/noise_sweep_diff_sig_best_by_sig_gap.png')
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
-n_dims = 64
-n_points = 5
+n_dims = 128
+n_points = 8
 # n_points = np.round(0.5 * n_dims * np.log(n_dims)).astype(int)
 # n_points = n_dims
 # n_hidden = 892
@@ -424,7 +434,7 @@ n_hidden = 1024
 
 noise = 0
 
-gamma0 = 1
+gamma0 = 0.25
 gamma = gamma0 * np.sqrt(n_hidden)
 lr = gamma0 * 10
 

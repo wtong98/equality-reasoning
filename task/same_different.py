@@ -198,13 +198,13 @@ class SameDifferentPentomino:
 
 
 class SameDifferentCifar100:
-    def __init__(self, ps, batch_size=128):
+    def __init__(self, ps, batch_size=128, **loader_kwargs):
         self.pieces = np.array(ps)
 
         self.batch_size = batch_size
         self.rng = np.random.default_rng(None)
 
-        self.cifar100 = load_data()
+        self.cifar100 = load_data(**loader_kwargs)
 
         self.label_to_idxs = defaultdict(list)
         for i, lab in enumerate(self.cifar100['labels']):

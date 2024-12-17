@@ -18,13 +18,14 @@ from task.same_different import SameDifferentCifar100
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 7
+run_split = 6
 
 train_iters = 100_000
-n_hidden = 16_000
+n_hidden = 4096
 
 n_trains = [2, 4, 8, 16, 32, 64, 98]
-log10_gs = np.linspace(-3, 0, num=7)
+log10_gs = np.linspace(-5, 0, num=6)
+preprocess = [True, False]
 base_lr = 1
 
 ### START TEST CONFIGS
@@ -35,12 +36,13 @@ base_lr = 1
 
 # n_trains = [16]
 # log10_gs = [0]
+# preprocess = [True]
 ### END TEST CONFIGS
 
 all_cases = []
 test_tasks = []
 
-for n_train in n_trains:
+for prep, n_train in itertools.product(preprocess, n_trains):
     ps = np.random.permutation(np.arange(100))
 
     train_ps = ps[:n_train]
@@ -68,8 +70,8 @@ for n_train in n_trains:
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
-            train_task=SameDifferentCifar100(ps=train_ps),
-            test_task=SameDifferentCifar100(ps=test_ps),
+            train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
+            test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
             info={'log10_gamma0': log10_gamma0, 'n_classes': n_train})
         all_cases.append(c)
 
@@ -88,9 +90,9 @@ eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
 for case in all_cases:
     case.state = None
 
-    # Tasks take up a lot of memory
-    case.train_task = None
-    case.test_task = None
+    # Task vecs take up a lot of memory
+    case.train_task.cifar100 = None
+    case.test_task.cifar100 = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
