@@ -72,7 +72,7 @@ for prep, n_train in itertools.product(preprocess, n_trains):
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
             train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
             test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
-            info={'log10_gamma0': log10_gamma0, 'n_classes': n_train})
+            info={'log10_gamma0': log10_gamma0, 'n_classes': n_train, 'preprocess': preprocess})
         all_cases.append(c)
 
 

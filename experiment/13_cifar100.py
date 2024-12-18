@@ -34,10 +34,11 @@ def extract_plot_vals(row):
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
+        row['train_task'].preprocess_cnn,
         max(hist_acc),
         hist_acc,
         np.arange(len(row['hist']['test']))
-    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'hist_acc', 'time'])
+    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'preprocess', 'hist_acc', 'time'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
