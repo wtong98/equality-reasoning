@@ -18,7 +18,7 @@ from task.same_different import SameDifferentCifar100
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 6
+run_split = 12
 
 train_iters = 100_000
 n_hidden = 4096
@@ -72,7 +72,7 @@ for prep, n_train in itertools.product(preprocess, n_trains):
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
             train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
             test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
-            info={'log10_gamma0': log10_gamma0, 'n_classes': n_train, 'preprocess': preprocess})
+            info={'log10_gamma0': log10_gamma0, 'n_classes': n_train, 'preprocess': prep})
         all_cases.append(c)
 
 

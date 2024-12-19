@@ -34,7 +34,7 @@ def extract_plot_vals(row):
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        row['train_task'].preprocess_cnn,
+        row['info']['preprocess'],
         max(hist_acc),
         hist_acc,
         np.arange(len(row['hist']['test']))
