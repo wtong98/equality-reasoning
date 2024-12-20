@@ -20,7 +20,7 @@ print('RUN ID', run_id)
 
 run_split = 12
 
-train_iters = 100_000
+train_iters = 25_000
 n_hidden = 4096
 
 n_trains = [2, 4, 8, 16, 32, 64, 98]
@@ -48,19 +48,19 @@ for prep, n_train in itertools.product(preprocess, n_trains):
     train_ps = ps[:n_train]
     test_ps = ps[n_train:]
 
-    # all_cases.extend([
-    #     Case(f'MLP (Adam)', 
-    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-    #         train_task=SameDifferentCifar100(ps=train_ps),
-    #         test_task=SameDifferentCifar100(ps=test_ps)),
+    all_cases.extend([
+        Case(f'MLP (Adam)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+            train_task=SameDifferentCifar100(ps=train_ps),
+            test_task=SameDifferentCifar100(ps=test_ps)),
 
-    #     Case(f'MLP (RF)', 
-    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
-    #         train_task=SameDifferentCifar100(ps=train_ps),
-    #         test_task=SameDifferentCifar100(ps=test_ps)),
-    # ])
+        Case(f'MLP (RF)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
+            train_task=SameDifferentCifar100(ps=train_ps),
+            test_task=SameDifferentCifar100(ps=test_ps)),
+    ])
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0

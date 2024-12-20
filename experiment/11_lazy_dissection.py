@@ -164,3 +164,20 @@ mdf = mdf[(mdf['sig2'] == 0) & (mdf['name'] == 'RF')]
 
 gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', col='n_dims', col_wrap=4, hue='name', marker='o', kind='line')
 gs.set(xscale='log')
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[
+    (mdf['sig2'] == 0) 
+    & (mdf['name'] == 'RF')
+    & (mdf['n_dims'] == 32)
+    ]
+
+gs = sns.lineplot(mdf, x='n_symbols', y='acc_unseen', hue='name', marker='o')
+gs.set(xscale='log')
+
+xs = np.unique(np.sort(mdf['n_symbols']))
+preds = 1 - np.exp(-(xs / 32)**2)
+
+plt.plot(xs, preds)
+

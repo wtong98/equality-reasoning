@@ -38,21 +38,22 @@ def extract_plot_vals(row):
         max(hist_acc),
         hist_acc,
         np.arange(len(row['hist']['test']))
-    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'preprocess', 'hist_acc', 'time'])
+    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'preprocess', 'acc_unseen_best', 'hist_acc', 'time'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
-# <codecell>
-mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_classes', 'gamma0'], var_name='acc_type', value_name='acc')
-mdf
 
-gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', hue='name', kind='line', marker='o', palette='rocket_r')
+# <codecell>
+mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_classes', 'gamma0', 'preprocess'], var_name='acc_type', value_name='acc')
+mdf = mdf[mdf['preprocess'] == True]
+
+gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', hue='gamma0', kind='line', marker='o', palette='rocket_r')
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
    
-plt.savefig('fig/cifar100_acc.png')
+plt.savefig('fig/cifar100_acc_prep.png')
 
 
 # <codecell>
