@@ -20,48 +20,65 @@ print('RUN ID', run_id)
 
 run_split = 12
 
-train_iters = 25_000
-n_hidden = 4096
+train_iters = 50_000
+n_hidden = 1024
 
-n_trains = [2, 4, 8, 16, 32, 64, 98]
-log10_gs = np.linspace(-5, 0, num=6)
-preprocess = [True, False]
+n_trains = [8, 16, 32, 64, 90]
+log10_gs = np.linspace(-4, 0, num=5)
 base_lr = 1
 
+preprocess = [True]
+
+layer_names = ['relu1_1',
+               'relu1_2',
+               'relu2_1',
+               'relu2_2',
+               'relu3_1',
+               'relu3_2',
+               'relu3_3',
+               'relu4_1',
+               'relu4_2',
+               'relu4_3',
+               'relu5_1',
+               'relu5_2',
+               'relu5_3',
+               'id']
+
 ### START TEST CONFIGS
-# run_split = 1
+run_split = 1
 
-# train_iters = 1000
-# n_hidden = 512
+train_iters = 1000
+n_hidden = 512
 
-# n_trains = [16]
-# log10_gs = [0]
-# preprocess = [True]
+n_trains = [16]
+log10_gs = [0]
+preprocess = [True]
+layer_names = ['relu5_3']
 ### END TEST CONFIGS
 
 all_cases = []
 test_tasks = []
 
-for prep, n_train in itertools.product(preprocess, n_trains):
+for prep, n_train, actv in itertools.product(preprocess, n_trains, layer_names):
     ps = np.random.permutation(np.arange(100))
 
     train_ps = ps[:n_train]
     test_ps = ps[n_train:]
 
     all_cases.extend([
-        Case(f'MLP (Adam)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
-            test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
-            info={'n_classes': n_train, 'preprocess': prep}),
+        # Case(f'MLP (Adam)', 
+        #     MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+        #     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+        #     train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
+        #     test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
+        #     info={'n_classes': n_train, 'preprocess': prep}),
 
-        Case(f'MLP (RF)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
-            train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
-            test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
-            info={'n_classes': n_train, 'preprocess': prep}),
+        # Case(f'MLP (RF)', 
+        #     MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+        #     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
+        #     train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
+        #     test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
+        #     info={'n_classes': n_train, 'preprocess': prep}),
     ])
 
     for log10_gamma0 in log10_gs:
@@ -72,13 +89,14 @@ for prep, n_train in itertools.product(preprocess, n_trains):
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
-            train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
-            test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
-            info={'log10_gamma0': log10_gamma0, 'n_classes': n_train, 'preprocess': prep})
+            train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep, actv_layer=actv),
+            test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep, actv_layer=actv),
+            info={'log10_gamma0': log10_gamma0, 'n_classes': n_train, 'preprocess': prep, 'actv': actv})
         all_cases.append(c)
 
 
 all_cases = split_cases(all_cases, run_split)
+print('CASES', all_cases)
 
 for case in tqdm(all_cases):
     print('RUNNING', case.name)

@@ -10,8 +10,21 @@ sys.path.append('../')
 from common import *
 from model.cnn import CnnConfig
 
+import flaxmodels as fm
+
+# xs = jnp.zeros((10, 32, 32, 3))
+# model = fm.VGG16(pretrained='imagenet', normalize=False, include_head=False, output='activations')
+# params = model.init(jax.random.PRNGKey(0), jnp.zeros((10, 32, 32, 3)))
+# out = model.apply(params, xs)
+
+# jax.tree.map(np.shape, out)  # TODO: map to outputs
+
+# model = CnnConfig(cnn_widths=[32, 64, 128], headless=True).to_model()
+# params = model.init(jax.random.PRNGKey(0), np.zeros((10, 32, 32, 3)))['params']
+# jax.tree.map(np.shape, params)
+
 # <codecell>
-def load_data(preprocess_cnn=True, seed=None):
+def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3'):
     if seed is None:
         seed = new_seed()
 
@@ -38,18 +51,28 @@ def load_data(preprocess_cnn=True, seed=None):
     all_data = np.concatenate((train_data, test_data), axis=0)
     all_data = (all_data - all_data.mean()) / all_data.std()
 
-    if preprocess_cnn:
+    if preprocess_cnn and actv_layer != 'id':
         all_data = all_data.reshape(-1, 32, 32, 3, order='F')
-        model = CnnConfig(cnn_widths=[32, 64, 128], headless=True).to_model()
+        # model = CnnConfig(cnn_widths=[64, 64], headless=True).to_model()
         # params = model.init(jax.random.PRNGKey(seed), all_data[[0]])['params']
 
-        with open(parent_path / 'cnn_params.pkl', 'rb') as fp:
-            params = pickle.load(fp)
+        model = fm.VGG16(pretrained='imagenet', normalize=False, include_head=False, output='activations')
+        params =model.init(jax.random.PRNGKey(0), all_data[[0]])
+        # params = {
+        #     'Conv_0': vgg_params['params']['conv1_1'],
+        #     'Conv_1': vgg_params['params']['conv1_2'],
+        # }
+
+        # with open(parent_path / 'cnn_params.pkl', 'rb') as fp:
+        #     params = pickle.load(fp)
 
         batches = []
-        for b in np.split(all_data, 50):
-            out = model.apply({'params': params}, b)
-            batches.append(out)
+        apply_fn = lambda b: model.apply(params, b, train=False)
+        apply_fn = jax.jit(apply_fn)
+
+        for b in tqdm(np.split(all_data, 1000)):
+            out = apply_fn(b)
+            batches.append(out[actv_layer])
 
         all_data = np.concatenate(batches, axis=0)
         all_data = all_data.reshape(all_data.shape[0], -1)
@@ -82,3 +105,5 @@ def load_data(preprocess_cnn=True, seed=None):
 
 # a = np.zeros((100, 32, 32))
 # np.split(a, 5)[0].shape
+
+# %%

@@ -47,13 +47,13 @@ plot_df
 
 # <codecell>
 mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_classes', 'gamma0', 'preprocess'], var_name='acc_type', value_name='acc')
-mdf = mdf[mdf['preprocess'] == True]
+mdf = mdf[mdf['preprocess'] == False]
 
-gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', hue='gamma0', kind='line', marker='o', palette='rocket_r')
+gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', hue='name', kind='line', marker='o', palette='rocket_r')
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
    
-plt.savefig('fig/cifar100_acc_prep.png')
+plt.savefig('fig/cifar100_acc_short.png')
 
 
 # <codecell>
@@ -64,11 +64,11 @@ test_pieces = np.arange(90, 100)
 
 preprocess = True
 
-train_task = SameDifferentCifar100(ps=train_pieces, preprocess_cnn=preprocess)
-test_task = SameDifferentCifar100(ps=test_pieces, preprocess_cnn=preprocess)
+train_task = SameDifferentCifar100(ps=train_pieces, preprocess_cnn=preprocess, actv_layer='relu5_3')
+test_task = SameDifferentCifar100(ps=test_pieces, preprocess_cnn=preprocess, actv_layer='relu5_3')
 
-
-gamma0 = 0.0001
+# <codecell>
+gamma0 = 0.00001
 gamma = gamma0
 gamma = np.sqrt(n_hidden) * gamma0
 lr = gamma0**2 * 1

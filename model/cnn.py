@@ -75,6 +75,40 @@ class CNN(nn.Module):
         return x
 
 
+# class VggCnn:
+
+#     @nn.compact
+#     def __call__(self, x):
+#         x = self._conv_block(x, features=64, num_layers=2, block_num=1, act=act, dtype=self.dtype)
+#         x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
+
+#         x = self._conv_block(x, features=128, num_layers=2, block_num=2, act=act, dtype=self.dtype)
+#         x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
+
+#         x = self._conv_block(x, features=256, num_layers=3, block_num=3, act=act, dtype=self.dtype)
+#         x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
+
+#         x = self._conv_block(x, features=512, num_layers=3, block_num=4, act=act, dtype=self.dtype)
+#         x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
+
+#         x = self._conv_block(x, features=512, num_layers=3, block_num=5, act=act, dtype=self.dtype)
+#         x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
+
+#         return x
+
+
+#     def _conv_block(self, x, features, num_layers, block_num, act, dtype='float32'):
+#         for l in range(num_layers):
+#             layer_name = f'conv{block_num}_{l + 1}'
+#             w = self.kernel_init if self.param_dict is None else lambda *_ : jnp.array(self.param_dict[layer_name]['weight']) 
+#             b = self.bias_init if self.param_dict is None else lambda *_ : jnp.array(self.param_dict[layer_name]['bias']) 
+#             x = nn.Conv(features=features, kernel_size=(3, 3), kernel_init=w, bias_init=b, padding='same', name=layer_name, dtype=dtype)(x)
+#             act[layer_name] = x
+#             x = nn.relu(x)
+#             act[f'relu{block_num}_{l + 1}'] = x
+#         return x
+
+
 @struct.dataclass
 class ResNetConfig:
     """Global hyperparamters"""

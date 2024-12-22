@@ -27,15 +27,15 @@ def is_match(w1, w2, z1, z2):
     
     return False
 
-n_rep = 500
+n_rep = 1
 meas = []
 
 for _ in tqdm(range(n_rep)):
     n_iters = 100
-    n_vocab = 6
+    n_vocab = 7
     batch_size = 100
 
-    a = 1
+    a = -1
 
     w1 = np.zeros(n_vocab)
     w2 = np.zeros(n_vocab)
@@ -105,14 +105,14 @@ for _ in tqdm(range(n_rep)):
 
         
         # print(f'ZS: {z1} {z2}')
-        # print('W1', w1)
-        # print('W2', w2)
-        # print('---')
+        print('W1', w1)
+        print('W2', w2)
+        print('---')
 
     # print('w1', np.sort(w1))
     # print('w2', np.sort(w2))
-    # print('w1', w1)
-    # print('w2', w2)
+    print('w1', w1)
+    print('w2', w2)
 
     # print('POS', mu_count_pos / mu_total_pos)
     # print('NEG', mu_count_neg / mu_total_neg)
@@ -190,7 +190,7 @@ lr = gamma0 * 10
 
 n_patches = 2
 
-train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=1, noise=noise)
+train_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=128, noise=noise)
 test_task = SameDifferent(n_patches=n_patches, n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024, noise=noise)
 
 config = MlpConfig(mup_scale=True,
@@ -253,7 +253,7 @@ jax.nn.relu(x @ W[:,sort_idxs[-1]]) * a[sort_idxs[-1]]
 
 # <codecell>
 W1_proj[:,sort_idxs[-1]]
-W2_proj[:,sort_idxs[0]]
+np.mean(np.abs(W2_proj[:,a<0]))
 
 
 # W1_pos[:,-1]
@@ -277,11 +277,13 @@ xs, ys = next(train_task)
 
 xs_pos = xs[ys == 1]
 out = state.apply_fn({'params': state.params}, xs_pos)
-plt.hist(out)
+# plt.hist(out)
+print(np.mean(out))
 
 xs_neg = xs[ys == 0]
 out = state.apply_fn({'params': state.params}, xs_neg)
-plt.hist(-out, alpha=0.5)
+# plt.hist(-out, alpha=0.5)
+print(-np.mean(out))
 
 
 
