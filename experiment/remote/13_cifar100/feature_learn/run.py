@@ -45,15 +45,15 @@ layer_names = ['relu1_1',
                'id']
 
 ### START TEST CONFIGS
-run_split = 1
+# run_split = 1
 
-train_iters = 1000
-n_hidden = 512
+# train_iters = 1000
+# n_hidden = 512
 
-n_trains = [16]
-log10_gs = [0]
-preprocess = [True]
-layer_names = ['relu5_3']
+# n_trains = [16]
+# log10_gs = [0]
+# preprocess = [True]
+# layer_names = ['relu5_3']
 ### END TEST CONFIGS
 
 all_cases = []
