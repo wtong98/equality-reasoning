@@ -3,6 +3,8 @@ Match task accuracies
 """
 
 # <codecell>
+import time
+
 import pandas as pd
 from tqdm import tqdm
 
@@ -19,6 +21,7 @@ run_id = new_seed()
 print('RUN ID', run_id)
 
 run_split = 12
+sleep_delay = True
 
 train_iters = 50_000
 n_hidden = 1024
@@ -46,6 +49,7 @@ layer_names = ['relu1_1',
 
 ### START TEST CONFIGS
 # run_split = 1
+# sleep_delay = False
 
 # train_iters = 1000
 # n_hidden = 512
@@ -55,6 +59,11 @@ layer_names = ['relu1_1',
 # preprocess = [True]
 # layer_names = ['relu5_3']
 ### END TEST CONFIGS
+
+if sleep_delay:
+    print('start sleep')
+    time.sleep(100 * np.random.random())
+    print('end sleep')
 
 all_cases = []
 test_tasks = []

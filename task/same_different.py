@@ -204,14 +204,17 @@ class SameDifferentCifar100:
         self.batch_size = batch_size
         self.rng = np.random.default_rng(None)
 
-        self.cifar100 = load_data(**loader_kwargs)
-
+        # lazy loading
+        self.loader_kwargs = loader_kwargs
+        self.cifar100 = None
         self.label_to_idxs = defaultdict(list)
-        for i, lab in enumerate(self.cifar100['labels']):
-            self.label_to_idxs[lab].append(i)
-        
     
     def __next__(self):
+        if self.cifar100 is None:
+            self.cifar100 = load_data(**self.loader_kwargs)
+            for i, lab in enumerate(self.cifar100['labels']):
+                self.label_to_idxs[lab].append(i)
+
         xs_idxs = batch_choice(self.pieces, 2, self.batch_size)
 
         ys = self.rng.binomial(n=1, p=0.5, size=(self.batch_size,))
