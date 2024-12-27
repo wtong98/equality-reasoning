@@ -20,10 +20,10 @@ from task.same_different import SameDifferentCifar100
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 12
+run_split = 28
 sleep_delay = True
 
-train_iters = 50_000
+train_iters = 100_000
 n_hidden = 1024
 
 n_trains = [8, 16, 32, 64, 90]
@@ -62,7 +62,9 @@ layer_names = ['relu1_1',
 
 if sleep_delay:
     print('start sleep')
-    time.sleep(100 * np.random.random())
+    run_idx = sys.argv[1]
+    run_idx = int(run_idx) % run_split
+    time.sleep(10 * run_idx)
     print('end sleep')
 
 all_cases = []
@@ -96,7 +98,7 @@ for prep, n_train, actv in itertools.product(preprocess, n_trains, layer_names):
         lr = gamma0**2 * base_lr
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True),
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
             train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep, actv_layer=actv),
             test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep, actv_layer=actv),
