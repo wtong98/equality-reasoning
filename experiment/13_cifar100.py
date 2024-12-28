@@ -42,6 +42,8 @@ df
 # <codecell>
 def extract_plot_vals(row):
     hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+    l = int(len(hist_acc) * 0.25)
+    hist_acc = hist_acc[:l]
 
     return pd.Series([
         row['name'],
