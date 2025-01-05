@@ -70,7 +70,7 @@ gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', row='actv', row_or
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
    
-# plt.savefig('fig/cifar100_acc_short.png')
+plt.savefig('fig/cifar100_vgg_samp.png')
 
 
 # <codecell>

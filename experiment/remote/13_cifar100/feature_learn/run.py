@@ -63,8 +63,9 @@ layer_names = ['relu1_1',
 if sleep_delay:
     print('start sleep')
     run_idx = sys.argv[1]
+    run_idx = int(run_idx)
+
     if run_idx < run_split:
-        run_idx = int(run_idx)
         time.sleep(10 * run_idx)
     print('end sleep')
 
