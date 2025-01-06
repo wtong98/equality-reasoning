@@ -18,11 +18,11 @@ print('RUN ID', run_id)
 
 run_split = 12
 
-train_iters = 50_000
+train_iters = 25_000
 n_vocab = 2**np.arange(1, 10)
-log10_gs = np.linspace(-3, 0, num=4)
-n_dims = [16, 32, 64, 128, 256]
-n_widths = [128, 256, 512, 1024, 4096]
+log10_gs = np.linspace(-5, 0, num=6)
+n_dims = [16, 32, 64, 128, 256, 512]
+n_widths = [128, 256, 512, 1024, 4096, 16_000]
 base_lr = 10
 
 n_layers = 1
@@ -46,13 +46,13 @@ for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
 
     all_cases.extend([
         Case(f'RF', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
             train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
             test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
 
         Case(f'Adam', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
             train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
             test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
@@ -65,7 +65,7 @@ for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
 
         all_cases.append(
             Case(rf'$\gamma=10^{ {log10_gamma0} }$',
-                    MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden),
+                    MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
                     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce',
                                 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
                     train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
