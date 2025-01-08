@@ -19,10 +19,10 @@ print('RUN ID', run_id)
 run_split = 12
 
 train_iters = 25_000
-n_vocab = 2**np.arange(1, 11)
-log10_gs = np.linspace(-4, 0, num=10)
+n_vocab = 2**np.arange(1, 10)
+log10_gs = np.linspace(-5, 0, num=6)
 n_dims = [16, 32, 64, 128, 256, 512]
-n_widths = [128, 256, 512, 1024]
+n_widths = [128, 256, 512, 1024, 4096, 16_000]
 base_lr = 10
 
 n_layers = 1

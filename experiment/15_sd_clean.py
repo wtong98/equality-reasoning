@@ -60,7 +60,7 @@ plot_df
 # <codecell>
 adf = plot_df[
     (plot_df['n_dims'] == 256)
-    & (plot_df['n_width'] == 1024)
+    & (plot_df['n_width'] == 128)
     ]
 
 mdf = adf[adf['name'].str.contains('gamma')]
@@ -70,7 +70,7 @@ g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', pal
 sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
 
 xs = np.unique(mdf['n_symbols'])
-acc_est = pred_rich_acc(xs)
+acc_est = pred_rich_acc(xs, a_raw=1.5)
 acc_est[0] = 0.75
 plt.plot(xs, acc_est, '--o', color='red')
 
@@ -117,7 +117,7 @@ sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
 
 # <codecell>
-mdf = adf[(adf['gamma0'] == -2)]
+mdf = adf[(adf['gamma0'] == -5)]
 # mdf = plot_df[plot_df['name'] == 'RF']
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
@@ -138,17 +138,17 @@ sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 # <codecell>
 mdf = plot_df.copy()
 mdf = mdf[
-    (mdf['n_width'] == 4096)
-    & (mdf['gamma0'] == -3)
+    (mdf['n_width'] == 1024)
+    & (mdf['gamma0'] == -5)
     ]
 
-mdf = mdf[['n_symbols', 'n_dims', 'acc_unseen']]
+mdf = mdf[['n_symbols', 'n_dims', 'acc_best']]
 mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
-mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_unseen')
+mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, xs)
+g.plot(xs, 2 * xs)
 
 # g.figure.savefig('fig/lazy_sweep_ndim_v_nsym.png')
 
@@ -165,7 +165,7 @@ mdf = mdf.pivot(index='n_width', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(0, 8)
-g.plot(xs, xs-1)
+g.plot(xs, 2 * xs - 2)
 
 # g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
 
