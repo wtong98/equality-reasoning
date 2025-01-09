@@ -59,8 +59,8 @@ plot_df
 
 # <codecell>
 adf = plot_df[
-    (plot_df['n_dims'] == 256)
-    & (plot_df['n_width'] == 128)
+    (plot_df['n_dims'] == 512)
+    & (plot_df['n_width'] == 256)
     ]
 
 mdf = adf[adf['name'].str.contains('gamma')]
@@ -117,7 +117,7 @@ sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
 
 # <codecell>
-mdf = adf[(adf['gamma0'] == -5)]
+mdf = adf[(adf['gamma0'] == -4) & (adf['n_width'] == 1024)]
 # mdf = plot_df[plot_df['name'] == 'RF']
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
@@ -134,11 +134,35 @@ g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 # g.figure.savefig('fig/cosyne/sd_lazy_dim.png', bbox_inches='tight')
 
+# <codecell>
+### LAZY VAR SYMBOLS
+df = collate_dfs('remote/15_sd_clean/lazy_var_symbols', concat=True)
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+
+    return pd.Series([
+        row['name'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['config']['n_hidden'],
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        max(hist_acc),
+        # min(hist_loss),
+    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_width', 'acc_seen', 'acc_unseen', 'acc_best'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
 
 # <codecell>
 mdf = plot_df.copy()
 mdf = mdf[
-    (mdf['n_width'] == 1024)
+    (mdf['n_width'] == 4096)
     & (mdf['gamma0'] == -5)
     ]
 
@@ -148,15 +172,40 @@ mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, 2 * xs)
+g.plot(xs, xs + 5)
 
 # g.figure.savefig('fig/lazy_sweep_ndim_v_nsym.png')
 
 # <codecell>
+### LAZY VAR WIDTH
+df = collate_dfs('remote/15_sd_clean/lazy_var_width', concat=True)
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+
+    return pd.Series([
+        row['name'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['config']['n_hidden'],
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        max(hist_acc),
+        # min(hist_loss),
+    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_width', 'acc_seen', 'acc_unseen', 'acc_best'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
 mdf = plot_df.copy()
 mdf = mdf[
-    (mdf['n_symbols'] == 128)
-  & (mdf['gamma0'] == -3)
+    (mdf['n_symbols'] == 64)
+  & (mdf['gamma0'] == -5)
     ]
 
 mdf = mdf[['n_width', 'n_dims', 'acc_best']]
@@ -165,7 +214,7 @@ mdf = mdf.pivot(index='n_width', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(0, 8)
-g.plot(xs, 2 * xs - 2)
+g.plot(xs, 2 * xs - 10)
 
 # g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
 

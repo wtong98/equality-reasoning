@@ -18,11 +18,11 @@ print('RUN ID', run_id)
 
 run_split = 12
 
-train_iters = 25_000
-n_vocab = np.round(2**np.linspace(1, 10, 20)).astype(int)
+train_iters = 100_000
+n_vocab = np.round(2**np.linspace(1, 9, 20)).astype(int)
 log10_gs = [-5]
-n_dims = np.round(2**np.linspace(4, 10, 20)).astype(int)
-n_widths = [512, 1024, 4096]
+n_dims = np.round(2**np.linspace(4, 9, 20)).astype(int)
+n_widths = [4096, 16_000]
 base_lr = 10
 
 n_layers = 1
