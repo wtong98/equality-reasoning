@@ -22,7 +22,7 @@ train_iters = 100_000
 n_vocab = [32, 64, 128]
 log10_gs = np.linspace(-4, 0, num=11)
 n_dims = [16, 512]
-n_widths = 2**np.linspace(2, 10, num=11)
+n_widths = np.round(2**np.linspace(4, 10, num=11)).astype(int)
 base_lr = 10
 
 n_layers = 1
@@ -31,11 +31,11 @@ sig2 = 0
 ### START TEST CONFIGS
 # run_split = 1
 
-# train_iters = 2500
-# n_vocab = [4]
-# n_dims = [2]
+# train_iters = 100
+# n_vocab = [32]
 # log10_gs = [0]
-# n_widths = [256]
+# n_dims = [16]
+# n_widths = [64]
 ### END TEST CONFIGS
 
 all_cases = []
@@ -43,20 +43,6 @@ test_tasks = []
 
 for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
     noise = sig2
-
-    all_cases.extend([
-        Case(f'RF', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
-
-        Case(f'Adam', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
-    ])
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
