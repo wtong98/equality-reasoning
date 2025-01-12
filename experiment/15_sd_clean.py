@@ -91,7 +91,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/cosyne/sd_acc.png ', bbox_inches='tight')
+g.figure.savefig('fig/sd_acc_sample.png', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -113,7 +113,7 @@ g.set_title(r'$\gamma_0 = 1$')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/cosyne/sd_rich_dim.png', bbox_inches='tight')
+g.figure.savefig('fig/sd_rich_dim_sample.png', bbox_inches='tight')
 
 
 # <codecell>
@@ -132,7 +132,7 @@ g.set_title(r'$\gamma_0 \approx 0$')
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/cosyne/sd_lazy_dim.png', bbox_inches='tight')
+g.figure.savefig('fig/sd_lazy_dim_sample.png', bbox_inches='tight')
 
 # <codecell>
 ### LAZY VAR SYMBOLS
@@ -172,7 +172,7 @@ mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, xs + 5)
+g.plot(xs, xs)
 
 # g.figure.savefig('fig/lazy_sweep_ndim_v_nsym.png')
 
@@ -204,7 +204,7 @@ plot_df
 # <codecell>
 mdf = plot_df.copy()
 mdf = mdf[
-    (mdf['n_symbols'] == 64)
+    (mdf['n_symbols'] == 128)
   & (mdf['gamma0'] == -5)
     ]
 
@@ -213,8 +213,8 @@ mdf = mdf.groupby(['n_width', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_width', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
-xs = 2**np.linspace(0, 8)
-g.plot(xs, 2 * xs - 10)
+xs = 2**np.linspace(-8, 8)
+g.plot(xs, xs)
 
 # g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
 

@@ -21,8 +21,8 @@ run_split = 12
 train_iters = 100_000
 n_vocab = [32, 64, 128]
 log10_gs = [-5]
-n_dims = np.round(2**np.linspace(4, 10, 20)).astype(int)
-n_widths = np.round(2**np.linspace(6, 14, 20)).astype(int)
+n_dims = np.round(2**np.linspace(4, 9, 20)).astype(int)
+n_widths = np.round(2**np.linspace(4, 9, 20)).astype(int)
 base_lr = 10
 
 n_layers = 1
