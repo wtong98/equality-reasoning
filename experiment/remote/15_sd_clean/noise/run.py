@@ -16,19 +16,18 @@ from task.same_different import SameDifferent
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 9
+run_split = 12
 
-train_iters = 100_000
-n_vocab = 2**np.arange(1, 10)
-log10_gs = np.linspace(-3, 0, num=4)
-n_dims = [32, 64, 128, 256, 512, 1024]
+train_iters = 50_000
+n_vocab = 2**np.arange(1, 12)
+log10_gs = np.linspace(-5, 0, num=6)
+n_dims = [64, 128, 256]
 base_lr = 10
-# sig2s = [0, 0.1, 0.5, 1, 2, 5]
-sig2s = [0, 0.1, 0.2, 0.3, 0.5, 1, 2, 4]
+sig2s = [0, 0.1, 1, 2, 4]
 noise_scale = 1
 
 n_layers = 1
-n_hidden = 16_000
+n_widths = [256, 512, 1024]
 
 ### START TEST CONFIGS
 # run_split = 1
@@ -38,12 +37,13 @@ n_hidden = 16_000
 # n_dims = [2]
 # log10_gs = [0]
 # sig2s = [0]
+# n_widths = [256]
 ### END TEST CONFIGS
 
 all_cases = []
 test_tasks = []
 
-for d, sig2, v in itertools.product(n_dims, sig2s, n_vocab):
+for d, sig2, n_hidden, v in itertools.product(n_dims, sig2s, n_widths, n_vocab):
     noise = sig2 * noise_scale
     
     all_cases.extend([
@@ -69,7 +69,7 @@ for d, sig2, v in itertools.product(n_dims, sig2s, n_vocab):
 
         all_cases.append(
             Case(rf'$\gamma_0=10^{ {log10_gamma0} }$',
-                    MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden),
+                    MlpConfig(mup_scale=True, n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
                     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce',
                                 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
                     train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
@@ -92,6 +92,8 @@ eval_cases(all_cases, eval_task=test_tasks, key_name='acc_unseen')
 
 for case in all_cases:
     case.state = None
+    case.train_task.symbols = None
+    case.test_task.symbols = None
     # case.hist = None
 
 df = pd.DataFrame(all_cases)
