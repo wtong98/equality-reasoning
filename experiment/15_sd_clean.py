@@ -172,9 +172,9 @@ mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, xs)
+g.plot(xs, 1.27 * xs - 1)
 
-# g.figure.savefig('fig/lazy_sweep_ndim_v_nsym.png')
+g.figure.savefig('fig/lazy_sweep_ndim_v_nsym_sample.png')
 
 # <codecell>
 ### LAZY VAR WIDTH
@@ -207,14 +207,14 @@ mdf = mdf[
     (mdf['n_symbols'] == 128)
   & (mdf['gamma0'] == -5)
     ]
-
+ 
 mdf = mdf[['n_width', 'n_dims', 'acc_best']]
 mdf = mdf.groupby(['n_width', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_width', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(-8, 8)
-g.plot(xs, xs)
+g.plot(xs, 2 * xs)
 
 # g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
 
