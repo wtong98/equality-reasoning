@@ -18,11 +18,11 @@ print('RUN ID', run_id)
 
 run_split = 12
 
-train_iters = 100_000
-n_vocab = [32, 64, 128]
-log10_gs = np.linspace(-4, 0, num=11)
+train_iters = 50_000
+n_vocab = [64, 128]
+log10_gs = np.linspace(-4, 0, num=21)
 n_dims = [16, 512]
-n_widths = np.round(2**np.linspace(4, 10, num=11)).astype(int)
+n_widths = np.round(2**np.linspace(4, 10, num=21)).astype(int)
 base_lr = 10
 
 n_layers = 1
@@ -47,7 +47,11 @@ for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
         gamma = gamma0 * np.sqrt(n_hidden)
-        lr = gamma0**2 * base_lr
+
+        if gamma0 < 1:
+            lr = gamma0**2 * base_lr
+        else:
+            lr = gamma0 * base_lr
 
         all_cases.append(
             Case(rf'$\gamma=10^{ {log10_gamma0} }$',
@@ -76,7 +80,10 @@ for case in all_cases:
     case.state = None
     case.train_task.symbols = None
     case.test_task.symbols = None
-    # case.hist = None
+
+    hist_acc = [m.accuracy.item() for m in case.hist['test']]
+    case.info['acc_best'] = max(hist_acc)
+    case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')

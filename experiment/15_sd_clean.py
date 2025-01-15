@@ -218,6 +218,69 @@ g.plot(xs, 2 * xs)
 
 # g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
 
+# <codecell>
+### PHASE PORTRAIT
+df = collate_dfs('remote/15_sd_clean/phase', concat=True)
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+
+    return pd.Series([
+        row['name'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['config']['n_hidden'],
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        max(hist_acc),
+    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_width', 'acc_seen', 'acc_unseen', 'acc_best'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+acc_key = 'acc_best'
+acc_cutoff = 0.9
+
+mdf = plot_df.copy().drop('name', axis='columns')
+mdf = mdf[mdf['n_symbols'] == 64].drop('n_symbols', axis='columns')
+
+mdf = mdf.groupby(['gamma0', 'n_width', 'n_dims'], as_index=False).mean()
+diff = np.array(mdf[mdf['n_dims'] == 16][acc_key]) - np.array(mdf[mdf['n_dims'] == 512][acc_key])
+
+adf = mdf[mdf['n_dims'] == 16].drop('n_dims', axis='columns')
+adf['diff'] = diff
+adf.loc[adf[acc_key] < acc_cutoff, 'diff'] = np.inf
+
+adf = adf.pivot(index='n_width', columns='gamma0', values='diff')
+
+cmap = mpl.colormaps.get_cmap('BrBG')
+cmap.set_bad('k')
+sns.heatmap(adf, cmap=cmap, vmin=-0.5, vmax=0.5)
+
+# <codecell>
+
+fig, axs = plt.subplots(2, 3, figsize=(12, 8))
+names = np.unique(mdf['name'])
+
+for name, ax in zip(names, axs.ravel()):
+    adf = mdf[mdf['name'] == name].drop('name', axis='columns')
+    adf = adf.groupby(['n_symbols', 'sig2'], as_index=False)
+    corrs = adf[['n_dims', 'acc_best']].cov().unstack().iloc[:,1]
+
+    adf = adf.mean()
+    adf['corrs'] = corrs
+
+    adf = adf.pivot(index='n_symbols', columns='sig2', values='corrs')
+    sns.heatmap(adf, cmap='BrBG', vmin=-20, vmax=20, ax=ax)
+    ax.set_title(name)
+
+fig.tight_layout()
+
 
 # <codecell>
 ### NOISE SWEEP
