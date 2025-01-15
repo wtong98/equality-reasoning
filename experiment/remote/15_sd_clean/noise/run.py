@@ -94,7 +94,10 @@ for case in all_cases:
     case.state = None
     case.train_task.symbols = None
     case.test_task.symbols = None
-    # case.hist = None
+
+    hist_acc = [m.accuracy.item() for m in case.hist['test']]
+    case.info['acc_best'] = max(hist_acc)
+    case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
