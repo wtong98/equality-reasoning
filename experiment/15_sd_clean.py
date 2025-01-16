@@ -225,8 +225,6 @@ df
 
 # <codecell>
 def extract_plot_vals(row):
-    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
-
     return pd.Series([
         row['name'],
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
@@ -235,7 +233,7 @@ def extract_plot_vals(row):
         row['config']['n_hidden'],
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        max(hist_acc),
+        row['info']['acc_best']
     ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_width', 'acc_seen', 'acc_unseen', 'acc_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
