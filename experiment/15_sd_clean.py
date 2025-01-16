@@ -289,6 +289,10 @@ plot_df
 
 
 # <codecell>
+df_bayes = collate_dfs('remote/15_sd_clean/bayes', concat=True)
+df_bayes
+
+# <codecell>
 ### COMPUTE BAYESIAN SOLUTIONS
 ds = np.unique(plot_df['n_dims'])
 n_symbols = np.unique(plot_df['n_symbols'])
@@ -352,14 +356,14 @@ df_bayes = pd.DataFrame(all_res)
 df_bayes
 
 # <codecell>
-gs = sns.relplot(df_bayes, x='n_symbols', y='acc_unseen', hue='name', col='noise', row='n_dims', kind='line', marker='o')
+gs = sns.relplot(df_bayes, x='n_symbols', y='acc_unseen', hue='name', col='sig2', row='n_dims', kind='line', marker='o')
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
 
 # <codecell>
-# mdf = pd.concat((mdf, df_bayes))
 mdf = plot_df.copy()
 mdf = mdf[mdf['n_width'] == 1024]
+mdf = pd.concat((plot_df, df_bayes))
 
 # mdf = mdf[mdf['sig2'] > 0.05]
 gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='name', col='sig2', row='n_dims', kind='line', marker='o')

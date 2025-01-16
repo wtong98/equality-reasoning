@@ -16,9 +16,9 @@ from task.same_different import SameDifferent
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 5
+run_split = 1
 
-n_vocab = 2**np.arange(1, 12)
+n_vocab = 2**np.arange(1, 14)
 n_dims = [64, 128, 256]
 sig2s = [0, 0.1, 1, 2, 4]
 noise_scale = 1

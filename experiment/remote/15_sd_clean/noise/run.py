@@ -19,7 +19,7 @@ print('RUN ID', run_id)
 run_split = 12
 
 train_iters = 50_000
-n_vocab = 2**np.arange(1, 12)
+n_vocab = 2**np.arange(1, 14)
 log10_gs = np.linspace(-5, 0, num=6)
 n_dims = [64, 128, 256]
 base_lr = 10
@@ -27,7 +27,7 @@ sig2s = [0, 0.1, 1, 2, 4]
 noise_scale = 1
 
 n_layers = 1
-n_widths = [256, 512, 1024]
+n_widths = [512, 1024]
 
 ### START TEST CONFIGS
 # run_split = 1
