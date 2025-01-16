@@ -38,6 +38,9 @@ print('CASES', all_cases)
 all_res = []
 
 for sig2, d, L in tqdm(all_cases):
+    d = int(d)
+    L = int(L)
+
     sig2_orig = sig2
 
     sig2 = sig2 * noise_scale

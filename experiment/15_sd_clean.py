@@ -91,7 +91,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/sd_acc_sample.png', bbox_inches='tight')
+# g.figure.savefig('fig/sd_acc_sample.png', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -204,7 +204,7 @@ plot_df
 # <codecell>
 mdf = plot_df.copy()
 mdf = mdf[
-    (mdf['n_symbols'] == 128)
+    (mdf['n_symbols'] == 4096)
   & (mdf['gamma0'] == -5)
     ]
  

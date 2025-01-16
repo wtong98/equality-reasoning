@@ -19,7 +19,7 @@ print('RUN ID', run_id)
 run_split = 12
 
 train_iters = 50_000
-n_vocab = [1024, 4096]
+n_vocab = [128, 512, 2048]
 log10_gs = [-5]
 n_dims = np.round(2**np.linspace(4, 9, 20)).astype(int)
 n_widths = np.round(2**np.linspace(4, 9, 20)).astype(int)
@@ -77,7 +77,10 @@ for case in all_cases:
     case.state = None
     case.train_task.symbols = None
     case.test_task.symbols = None
-    # case.hist = None
+
+    hist_acc = [m.accuracy.item() for m in case.hist['test']]
+    case.info['acc_best'] = max(hist_acc)
+    case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
