@@ -18,16 +18,16 @@ print('RUN ID', run_id)
 
 run_split = 12
 
-train_iters = 50_000
+train_iters = 25_000
 n_vocab = 2**np.arange(1, 14)
-log10_gs = np.linspace(-5, 0, num=6)
+log10_gs = np.linspace(-5, 0, num=11)
 n_dims = [64, 128, 256]
 base_lr = 10
 sig2s = [0, 0.1, 1, 2, 4]
 noise_scale = 1
 
 n_layers = 1
-n_widths = [512, 1024]
+n_widths = [1024]
 
 ### START TEST CONFIGS
 # run_split = 1
@@ -46,21 +46,21 @@ test_tasks = []
 for d, sig2, n_hidden, v in itertools.product(n_dims, sig2s, n_widths, n_vocab):
     noise = sig2 * noise_scale
     
-    all_cases.extend([
-        Case(f'RF', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
-            info={'sig2': sig2}),
+    # all_cases.extend([
+    #     Case(f'RF', 
+    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+    #         train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
+    #         test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
+    #         info={'sig2': sig2}),
 
-        Case(f'Adam', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
-            info={'sig2': sig2}),
-    ])
+    #     Case(f'Adam', 
+    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+    #         train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
+    #         test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
+    #         info={'sig2': sig2}),
+    # ])
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0

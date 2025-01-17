@@ -2,7 +2,6 @@
 #SBATCH -c 16
 #SBATCH -t 12:00:00
 #SBATCH -p seas_compute,shared
-#SBATCH --gres=gpu:1
 #SBATCH --mem=128000
 #SBATCH -o log.%A.%a.out
 #SBATCH -e log.%A.%a.err

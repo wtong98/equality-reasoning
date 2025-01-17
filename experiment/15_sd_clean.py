@@ -23,7 +23,9 @@ from task.same_different import SameDifferent
 
 def pred_rich_acc(n_points, a_raw=1.5):
     a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
-    pt = np.sqrt(2 * n_points) * np.sqrt(2 / (np.pi - 2)) * a
+    # pt = np.sqrt(2 * n_points) * np.sqrt(2 / (np.pi - 2)) * a
+    pt = (n_points - 1) * np.sqrt(2 / (np.pi - 2)) * a
+    pt = np.sqrt(2 * n_points * (1/2 * n_points - 1)) * np.sqrt(2 / (np.pi - 2)) * a
     neg_acc = norm.cdf(pt)
     return (neg_acc + 1) / 2
 
@@ -60,7 +62,7 @@ plot_df
 # <codecell>
 adf = plot_df[
     (plot_df['n_dims'] == 512)
-    & (plot_df['n_width'] == 256)
+    & (plot_df['n_width'] == 1024)
     ]
 
 mdf = adf[adf['name'].str.contains('gamma')]
@@ -72,7 +74,7 @@ sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1,
 xs = np.unique(mdf['n_symbols'])
 acc_est = pred_rich_acc(xs, a_raw=1.5)
 acc_est[0] = 0.75
-plt.plot(xs, acc_est, '--o', color='red')
+plt.plot(xs, acc_est, '--', color='red', alpha=1)
 
 g.legend_.set_title('')
 
@@ -91,7 +93,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/sd_acc_sample.png', bbox_inches='tight')
+g.figure.savefig('fig/sd_acc_sample.png', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -174,7 +176,7 @@ g = sns.heatmap(mdf)
 xs = 2**np.linspace(-5, 8)
 g.plot(xs, 1.27 * xs - 1)
 
-g.figure.savefig('fig/lazy_sweep_ndim_v_nsym_sample.png')
+# g.figure.savefig('fig/lazy_sweep_ndim_v_nsym_sample.png')
 
 # <codecell>
 ### LAZY VAR WIDTH
@@ -183,8 +185,6 @@ df
 
 # <codecell>
 def extract_plot_vals(row):
-    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
-
     return pd.Series([
         row['name'],
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
@@ -193,8 +193,7 @@ def extract_plot_vals(row):
         row['config']['n_hidden'],
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        max(hist_acc),
-        # min(hist_loss),
+        row['info']['acc_best']
     ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_width', 'acc_seen', 'acc_unseen', 'acc_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
@@ -204,7 +203,7 @@ plot_df
 # <codecell>
 mdf = plot_df.copy()
 mdf = mdf[
-    (mdf['n_symbols'] == 4096)
+    (mdf['n_symbols'] == 128)
   & (mdf['gamma0'] == -5)
     ]
  
@@ -214,9 +213,10 @@ mdf = mdf.pivot(index='n_width', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(-8, 8)
-g.plot(xs, 2 * xs)
+# g.plot(xs, xs + np.log(xs))
+# g.plot(xs, xs)
 
-# g.figure.savefig('fig/lazy_sweep_ndim_v_nhid.png')
+# g.figure.savefig('fig/lazy_sweep_ndim_v_nhid_sample.png')
 
 # <codecell>
 ### PHASE PORTRAIT
@@ -268,8 +268,6 @@ df
 
 # <codecell>
 def extract_plot_vals(row):
-    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
-
     return pd.Series([
         row['name'],
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
@@ -280,7 +278,7 @@ def extract_plot_vals(row):
         row['train_task'].noise,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        max(hist_acc),
+        row['info']['acc_best']
     ], index=['name', 'gamma0', 'n_width', 'n_symbols', 'n_dims', 'sig2', 'noise', 'acc_seen', 'acc_unseen', 'acc_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
@@ -372,4 +370,23 @@ for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
     # g.set_yscale('log')
 
-# plt.savefig('fig/noise_sweep_diff_sig_best.png')
+plt.savefig('fig/noise_sweep_diff_sig_best_sample.png')
+
+
+# <codecell>
+n_iters = 10_000
+n_dims = 100
+a = np.random.randn(n_iters, n_dims)
+b = np.random.randn(n_iters, n_dims)
+c = np.random.randn(n_iters, n_dims)
+d = np.random.randn(n_iters, n_dims)
+e = np.random.randn(n_iters, n_dims)
+f = np.random.randn(n_iters, n_dims)
+g = np.random.randn(n_iters, n_dims)
+h = np.random.randn(n_iters, n_dims)
+
+z1 = np.diag(a @ (b + c).T)
+z2 = np.diag(d @ e.T + f @ g.T)
+
+plt.hist(z1, bins=50)
+plt.hist(z2, bins=50)
