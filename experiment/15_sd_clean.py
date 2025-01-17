@@ -374,8 +374,8 @@ plt.savefig('fig/noise_sweep_diff_sig_best_sample.png')
 
 
 # <codecell>
-n_iters = 10_000
-n_dims = 100
+n_iters = 1000
+n_dims = 10000
 a = np.random.randn(n_iters, n_dims)
 b = np.random.randn(n_iters, n_dims)
 c = np.random.randn(n_iters, n_dims)
@@ -388,5 +388,5 @@ h = np.random.randn(n_iters, n_dims)
 z1 = np.diag(a @ (b + c).T)
 z2 = np.diag(d @ e.T + f @ g.T)
 
-plt.hist(z1, bins=50)
-plt.hist(z2, bins=50)
+plt.hist(z1, bins=50, density=True, alpha=0.5)
+plt.hist(z2, bins=50, density=True, alpha=0.5)
