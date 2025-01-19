@@ -51,13 +51,13 @@ for n_train in n_trains:
 
     all_cases.extend([
         Case(f'MLP (Adam)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
             train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
             test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
 
         Case(f'MLP (RF)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
             train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
             test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
@@ -69,7 +69,7 @@ for n_train in n_trains:
         lr = gamma0**2 * base_lr
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True),
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
             train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
             test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur),

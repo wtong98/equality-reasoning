@@ -246,6 +246,8 @@ acc_cutoff = 0.9
 
 mdf = plot_df.copy().drop('name', axis='columns')
 mdf = mdf[mdf['n_symbols'] == 64].drop('n_symbols', axis='columns')
+mdf['gamma0'] = np.round(mdf['gamma0'], decimals=2)
+mdf
 
 mdf = mdf.groupby(['gamma0', 'n_width', 'n_dims'], as_index=False).mean()
 diff = np.array(mdf[mdf['n_dims'] == 16][acc_key]) - np.array(mdf[mdf['n_dims'] == 512][acc_key])
@@ -255,11 +257,13 @@ adf['diff'] = diff
 adf.loc[adf[acc_key] < acc_cutoff, 'diff'] = np.inf
 
 adf = adf.pivot(index='n_width', columns='gamma0', values='diff')
+adf = adf.iloc[::-1]
 
 cmap = mpl.colormaps.get_cmap('BrBG')
 cmap.set_bad('k')
 sns.heatmap(adf, cmap=cmap, vmin=-0.5, vmax=0.5)
 
+# plt.savefig('fig/phase_sample.png')
 
 # <codecell>
 ### NOISE
@@ -364,6 +368,7 @@ mdf = mdf[mdf['n_width'] == 1024]
 mdf = pd.concat((plot_df, df_bayes))
 
 # mdf = mdf[mdf['sig2'] > 0.05]
+# gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='gamma0', col='sig2', row='n_dims', kind='line', marker='o', palette='rocket_r')
 gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='name', col='sig2', row='n_dims', kind='line', marker='o')
 
 for g in gs.axes.ravel():

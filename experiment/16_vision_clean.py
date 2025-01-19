@@ -22,23 +22,15 @@ from model.transformer import TransformerConfig
 from task.same_different import SameDifferentPentomino, SameDifferentPsvrt, gen_patches
 from task.pentomino import pieces
 
-set_theme()
+# set_theme()
 
 # <codecell>
-task = SameDifferentPsvrt(patch_size=5, n_patches=5)
-xs, ys = next(task)
-plt.imshow(xs[0], cmap='plasma')
-plt.gca().set_axis_off()
-
-plt.savefig('fig/psvrt_same_eg.png')
-
-# <codecell>
-df = collate_dfs('remote/5_psvrt/feature_learn')
+### PSVRT
+df = collate_dfs('remote/16_vision_clean/psvrt')
 df
 
 # <codecell>
 def extract_plot_vals(row):
-    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
 
     return pd.Series([
         row['name'],
@@ -46,31 +38,29 @@ def extract_plot_vals(row):
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        max(hist_acc),
-        hist_acc,
-        np.arange(len(row['hist']['test']))
-    ], index=['name', 'n_pieces', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_unseen_best', 'hist_acc', 'time'])
+        row['info']['acc_best']
+    ], index=['name', 'n_pieces', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
 # <codecell>
-mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_pieces', 'gamma0'], var_name='acc_type', value_name='acc')
+mdf = plot_df.melt(id_vars=['name', 'n_pieces', 'gamma0'], var_name='acc_type', value_name='acc')
 mdf
 
 gs = sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
 
-plt.savefig('fig/psvrt_acc.png')
+# plt.savefig('fig/psvrt_acc.png')
 
 # <codecell>
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
 mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 
-g = sns.lineplot(mdf, x='n_pieces', y='acc_unseen_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
-sns.lineplot(mdf2, x='n_pieces', y='acc_unseen_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
+g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
+sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
 
 g.figure.set_size_inches(5, 4)
 g.set_xscale('log', base=2)
@@ -92,51 +82,118 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/cosyne/psvrt_acc.png', bbox_inches='tight')
+# g.figure.savefig('fig/cosyne/psvrt_acc.png', bbox_inches='tight')
 
 
 # <codecell>
-mdf = plot_df.drop(['acc_seen', 'acc_unseen'], axis=1)
-mdf = mdf.explode(['hist_acc', 'time'])
+### PSVRT
+df = collate_dfs('remote/16_vision_clean/pentomino')
+df
 
-sns.relplot(mdf, x='time', y='hist_acc', hue='name', col='n_pieces', col_wrap=3, kind='line')
-plt.savefig('fig/psvrt_hist.png')
+# <codecell>
+def extract_plot_vals(row):
+
+    return pd.Series([
+        row['name'],
+        len(row['train_task'].pieces),
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        row['info']['acc_best']
+    ], index=['name', 'n_pieces', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_best'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+mdf = plot_df.melt(id_vars=['name', 'n_pieces', 'gamma0'], var_name='acc_type', value_name='acc')
+mdf
+
+gs = sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
+for g in gs.axes.ravel():
+    g.set_xscale('log', base=2)
+
+# plt.savefig('fig/pentomino_acc.png')
+
+# <codecell>
+mdf = plot_df[plot_df['name'].str.contains('gamma')]
+mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
+
+g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
+sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
+
+g.figure.set_size_inches(5, 4)
+# g.set_xscale('log', base=2)
+
+g.legend_.set_title('')
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    if 'Adam' in text:
+        t.set_text('Adam')
+    elif 'RF' in text:
+        t.set_text('RF')
+    else:
+        t.set_text(f'$\gamma_0$ = 1e{text}')
+
+g.set_xlabel('# shapes')
+g.set_ylabel('Test accuracy')
+
+g.figure.tight_layout()
+
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+# g.figure.savefig('fig/cosyne/pentomino_acc.png', bbox_inches='tight')
+
+# <codecell>
+# CIFAR-100
+layer_names = ['id',
+               'relu1_1',
+               'relu1_2',
+               'relu2_1',
+               'relu2_2',
+               'relu3_1',
+               'relu3_2',
+               'relu3_3',
+               'relu4_1',
+               'relu4_2',
+               'relu4_3',
+               'relu5_1',
+               'relu5_2',
+               'relu5_3']
+
+df = collate_dfs('remote/16_vision_clean/cifar100')
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
+    # l = int(len(hist_acc) * 0.25)
+    # hist_acc = hist_acc[:l]
+
+    return pd.Series([
+        row['name'],
+        row['info']['n_classes'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        row['info']['preprocess'],
+        row['info']['actv'],
+        max(hist_acc),
+        hist_acc,
+        np.arange(len(row['hist']['test']))
+    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'preprocess', 'actv', 'acc_unseen_best', 'hist_acc', 'time'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
 
 
 # <codecell>
-n_hidden = 512
-n_train = 256
-n_patches = 5
-patch_size = 5
+mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_classes', 'gamma0', 'preprocess', 'actv'], var_name='acc_type', value_name='acc')
 
-train_set = gen_patches(patch_size=patch_size, n_examples=n_train)
-
-train_task = SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, inc_set=train_set)
-test_task = SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches)
-
-
-gamma0 = 0.1
-# gamma = gamma0
-gamma = np.sqrt(n_hidden) * gamma0
-lr = gamma0**2 * 1
-
-config = MlpConfig(n_out=1, 
-                   mup_scale=True,
-                   n_layers=1, 
-                   n_hidden=n_hidden, 
-                   use_bias=False,
-                   act_fn='relu',
-                #    as_rf_model=True
-                   )
-
-
-state, hist = train(config,
-                    data_iter=iter(train_task), 
-                    test_iter=iter(test_task), 
-                    loss='bce',
-                    test_every=1000,
-                    train_iters=100_000, 
-                    optim=optax.sgd,
-                    seed=None,
-                    gamma=gamma,
-                    lr=lr)
+gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', row='actv', row_order=layer_names, hue='gamma0', kind='line', marker='o', palette='rocket_r')
+for g in gs.axes.ravel():
+    g.set_xscale('log', base=2)
+   
+plt.savefig('fig/cifar100_vgg_samp.png')

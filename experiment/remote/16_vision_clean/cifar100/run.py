@@ -20,7 +20,7 @@ from task.same_different import SameDifferentCifar100
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 28
+run_split = 14
 sleep_delay = True
 
 train_iters = 50_000
@@ -54,7 +54,7 @@ layer_names = ['relu1_1',
 # train_iters = 1000
 # n_hidden = 512
 
-# n_trains = [16]
+# n_trains = [8, 16]
 # log10_gs = [0]
 # preprocess = [True]
 # layer_names = ['relu5_3']
@@ -72,7 +72,7 @@ if sleep_delay:
 all_cases = []
 test_tasks = []
 
-for prep, n_train, actv in itertools.product(preprocess, n_trains, layer_names):
+for prep, actv, n_train in itertools.product(preprocess, layer_names, n_trains):
     ps = np.random.permutation(np.arange(100))
 
     train_ps = ps[:n_train]
@@ -100,7 +100,7 @@ for prep, n_train, actv in itertools.product(preprocess, n_trains, layer_names):
         lr = gamma0**2 * base_lr
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True),
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
             train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep, actv_layer=actv),
             test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep, actv_layer=actv),
@@ -126,6 +126,10 @@ for case in all_cases:
     # Task vecs take up a lot of memory
     case.train_task.cifar100 = None
     case.test_task.cifar100 = None
+
+    hist_acc = [m.accuracy.item() for m in case.hist['test']]
+    case.info['acc_best'] = max(hist_acc)
+    case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
