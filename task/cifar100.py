@@ -26,7 +26,7 @@ import flaxmodels as fm
 # <codecell>
 cache = {}
 
-def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3'):
+def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3', sub_samp=1):
     global cache
 
     if seed is None:
@@ -54,6 +54,14 @@ def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3'):
     all_labs = train_labs + test_labs
     all_data = np.concatenate((train_data, test_data), axis=0)
     all_data = (all_data - all_data.mean()) / all_data.std()
+
+    if sub_samp < 1:
+        data_len = all_data.shape[0]
+        sub_len = np.round(sub_samp * data_len).astype(int)
+        sub_samp_idx = np.random.choice(data_len, size=sub_len, replace=False)
+        all_data = all_data[sub_samp_idx]
+        all_labs = np.array(all_labs)[sub_samp_idx]
+        print(f'info: sub samp data to size={all_data.shape[0]}')
 
     if preprocess_cnn and actv_layer != 'id':
         if actv_layer in cache:

@@ -76,16 +76,16 @@ plt.savefig('fig/cifar100_vgg_samp.png')
 # <codecell>
 n_hidden = 1024
 
-train_pieces = np.arange(90)
-test_pieces = np.arange(90, 100)
+train_pieces = np.arange(64)
+test_pieces = np.arange(64, 100)
 
 preprocess = True
 
-train_task = SameDifferentCifar100(ps=train_pieces, preprocess_cnn=preprocess, actv_layer='relu5_3')
-test_task = SameDifferentCifar100(ps=test_pieces, preprocess_cnn=preprocess, actv_layer='relu5_3')
+train_task = SameDifferentCifar100(ps=train_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, batch_size=256)
+test_task = SameDifferentCifar100(ps=test_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, batch_size=256)
 
 # <codecell>
-gamma0 = 0.00001
+gamma0 = 1
 gamma = gamma0
 gamma = np.sqrt(n_hidden) * gamma0
 lr = gamma0**2 * 1

@@ -53,7 +53,7 @@ gs = sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='l
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
 
-# plt.savefig('fig/psvrt_acc.png')
+# plt.savefig('fig/psvrt_acc_sample.png')
 
 # <codecell>
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
@@ -82,11 +82,11 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/cosyne/psvrt_acc.png', bbox_inches='tight')
+g.figure.savefig('fig/psvrt_acc_sample.png', bbox_inches='tight')
 
 
 # <codecell>
-### PSVRT
+### PENTOMINO
 df = collate_dfs('remote/16_vision_clean/pentomino')
 df
 
@@ -143,7 +143,7 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/cosyne/pentomino_acc.png', bbox_inches='tight')
+g.figure.savefig('fig/pentomino_acc_sample.png', bbox_inches='tight')
 
 # <codecell>
 # CIFAR-100
@@ -167,7 +167,6 @@ df
 
 # <codecell>
 def extract_plot_vals(row):
-    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
     # l = int(len(hist_acc) * 0.25)
     # hist_acc = hist_acc[:l]
 
@@ -179,10 +178,8 @@ def extract_plot_vals(row):
         row['info']['acc_unseen'].item(),
         row['info']['preprocess'],
         row['info']['actv'],
-        max(hist_acc),
-        hist_acc,
-        np.arange(len(row['hist']['test']))
-    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'preprocess', 'actv', 'acc_unseen_best', 'hist_acc', 'time'])
+        row['info']['acc_best']
+    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'preprocess', 'actv', 'acc_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
@@ -190,7 +187,7 @@ plot_df
 
 
 # <codecell>
-mdf = plot_df.drop(['hist_acc', 'time'], axis=1).melt(id_vars=['name', 'n_classes', 'gamma0', 'preprocess', 'actv'], var_name='acc_type', value_name='acc')
+mdf = plot_df.melt(id_vars=['name', 'n_classes', 'gamma0', 'preprocess', 'actv'], var_name='acc_type', value_name='acc')
 
 gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', row='actv', row_order=layer_names, hue='gamma0', kind='line', marker='o', palette='rocket_r')
 for g in gs.axes.ravel():
