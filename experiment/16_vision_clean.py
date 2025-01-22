@@ -84,6 +84,35 @@ g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/psvrt_acc_sample.png', bbox_inches='tight')
 
+# <codecell>
+# <codecell>
+### PSVRT
+df = collate_dfs('remote/16_vision_clean/psvrt_large')
+df
+
+# <codecell>
+def extract_plot_vals(row):
+
+    return pd.Series([
+        row['name'],
+        len(row['train_task'].inc_set),
+        row['train_task'].n_patches,
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        row['info']['acc_best']
+    ], index=['name', 'n_pieces', 'n_patches', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_best'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[mdf['n_pieces'] == 1024]
+
+sns.lineplot(mdf, x='n_patches', y='acc_best', hue='gamma0', marker='o')
+
 
 # <codecell>
 ### PENTOMINO
@@ -144,6 +173,34 @@ g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/pentomino_acc_sample.png', bbox_inches='tight')
+
+# <codecell>
+### PENTOMINO LARGE
+df = collate_dfs('remote/16_vision_clean/pentomino_large')
+df
+
+# <codecell>
+def extract_plot_vals(row):
+
+    return pd.Series([
+        row['name'],
+        len(row['train_task'].inc_set),
+        row['train_task'].n_patches,
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        row['info']['acc_best']
+    ], index=['name', 'n_pieces', 'n_patches', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_best'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[mdf['n_pieces'] == 1024]
+
+sns.lineplot(mdf, x='n_patches', y='acc_best', hue='gamma0', marker='o')
 
 # <codecell>
 # CIFAR-100

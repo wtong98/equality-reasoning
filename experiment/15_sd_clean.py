@@ -29,6 +29,8 @@ def pred_rich_acc(n_points, a_raw=1.5):
     neg_acc = norm.cdf(pt)
     return (neg_acc + 1) / 2
 
+set_theme()
+
 # sns.set_theme(style='ticks', font_scale=1.25, rc={
 #     'axes.spines.right': False,
 #     'axes.spines.top': False,
@@ -74,9 +76,16 @@ sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1,
 xs = np.unique(mdf['n_symbols'])
 acc_est = pred_rich_acc(xs, a_raw=1.5)
 acc_est[0] = 0.75
-plt.plot(xs, acc_est, '--', color='red', alpha=1)
+
+tdf = pd.DataFrame({'n_symbols': xs, 'acc_best': acc_est})
+tdf['name'] = 'Theory'
+sns.lineplot(tdf, x='n_symbols', y='acc_best', hue='name', ax=g, palette=['red'], linestyle='dashed')
 
 g.legend_.set_title('')
+
+handles, labels = plt.gca().get_legend_handles_labels()
+order = [8, 5, 4, 3, 2, 1, 0, 6, 7]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 
 for t in g.legend_.get_texts():
     text = t.get_text()
@@ -84,16 +93,17 @@ for t in g.legend_.get_texts():
         t.set_text('Adam')
     elif 'RF' in text:
         t.set_text('RF')
-    else:
-        t.set_text(f'$\gamma$ = 1e{text}')
+    elif text != 'Theory':
+        t.set_text('$\gamma$ = $10^{%s}$' % text)
 
-g.set_xlabel('# symbols')
+g.set_xlabel('# symbols ($L$)')
 g.set_ylabel('Test accuracy')
 g.set_xscale('log', base=2)
 
+
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/sd_acc_sample.png', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_acc.svg', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -102,39 +112,44 @@ adf = plot_df[plot_df['n_symbols'] >= 0] # <-- control appropriately
 mdf = adf[(adf['gamma0'] == 0)]
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
-# g.figure.set_size_inches(3.4, 3)
+g.figure.set_size_inches(4, 3.5)
 g.legend_.set_title('# symbols')
-
 
 g.set_xscale('log', base=2)
 
-g.set_xlabel('Input dimensions')
+g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('Test accuracy')
-g.set_title(r'$\gamma_0 = 1$')
+g.set_title(r'$\gamma = 1$')
+
+g.set_ylim((0.45, 1.02))
+g.axhline(y=0.5, color='gray', linestyle='dashed')
 
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/sd_rich_dim_sample.png', bbox_inches='tight')
-
+g.figure.savefig('fig/ccn/sd_rich_dim.svg', bbox_inches='tight')
 
 # <codecell>
 mdf = adf[(adf['gamma0'] == -4) & (adf['n_width'] == 1024)]
 # mdf = plot_df[plot_df['name'] == 'RF']
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
-# g.figure.set_size_inches(3.4, 3)
+g.set_ylim((0.45, 1.02))
+
+g.figure.set_size_inches(4, 3.5)
 g.legend_.set_title('# symbols')
 
 g.set_xscale('log', base=2)
 
-g.set_xlabel('Input dimensions')
+g.set_xlabel('Input dimension (d)')
 g.set_ylabel('Test accuracy')
 g.set_title(r'$\gamma_0 \approx 0$')
 
+g.axhline(y=0.5, color='gray', linestyle='dashed')
+
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/sd_lazy_dim_sample.png', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_lazy_dim.svg', bbox_inches='tight')
 
 # <codecell>
 ### LAZY VAR SYMBOLS
@@ -364,7 +379,52 @@ for g in gs.axes.ravel():
 
 # <codecell>
 mdf = plot_df.copy()
-mdf = mdf[mdf['n_width'] == 1024]
+
+mdf = mdf[(mdf['n_width'] == 1024)]
+sigs = [0, 1, 2, 4]
+all_n_dims = [64, 128, 256]
+
+for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
+    cdf = mdf[(mdf['noise'] == sig) & (mdf['n_dims'] == n_dims)]
+    bdf = df_bayes[(df_bayes['sig2'] == sig) & (df_bayes['n_dims'] == n_dims)]
+
+    g = sns.lineplot(cdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o')
+    sns.lineplot(bdf, x='n_symbols', y='acc_unseen', hue='name', ax=g, linestyle='dashed', errorbar=('ci', False), palette=['red', 'magenta'])
+
+    g.set_ylim((0.45, 1.02))
+    # g.axhline(y=0.5, color='gray', linestyle='dashed')
+    g.axhline(y=1, color='white', linestyle='dashed', alpha=0)
+
+    g.set_xscale('log', base=2)
+    g.set_xlabel('# symbols ($L$)')
+    g.set_ylabel('Test accuracy')
+    g.set_title(f'$\sigma^2 = {sig}$')
+
+    g.legend_.set_title('')
+
+    handles, labels = plt.gca().get_legend_handles_labels()
+    order = [5, 4, 3, 2, 1, 0, 6, 7]
+    plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
+
+    for t in g.legend_.get_texts():
+        text = t.get_text()
+        if 'Gen' in text:
+            t.set_text('Bayes gen')
+        elif 'Mem' in text:
+            t.set_text('Bayes mem')
+        elif text != 'Theory':
+            t.set_text('$\gamma$ = $10^{%s}$' % text)
+
+    g.figure.set_size_inches(3.5, 3)
+    g.figure.tight_layout()
+    sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+
+    plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
+    plt.show()
+
+# <codecell>
+
+
 mdf = pd.concat((plot_df, df_bayes))
 
 # mdf = mdf[mdf['sig2'] > 0.05]

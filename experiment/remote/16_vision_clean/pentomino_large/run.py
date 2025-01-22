@@ -51,19 +51,19 @@ for n_train, n_width in itertools.product(n_trains, n_widths):
     train_ps = ps[:n_train]
     test_ps = ps[n_train:]
 
-    # all_cases.extend([
-    #     Case(f'MLP (Adam)', 
-    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
-    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-    #         train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
-    #         test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
+    all_cases.extend([
+        Case(f'MLP (Adam)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+            train_task=SameDifferentPentomino(ps=train_ps, width=n_width, blur=blur, random_blur=random_blur),
+            test_task=SameDifferentPentomino(ps=test_ps, width=n_width, batch_size=1024, blur=test_blur)),
 
-    #     Case(f'MLP (RF)', 
-    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
-    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
-    #         train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
-    #         test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur)),
-    # ])
+        Case(f'MLP (RF)', 
+            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
+            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
+            train_task=SameDifferentPentomino(ps=train_ps, width=n_width, blur=blur, random_blur=random_blur),
+            test_task=SameDifferentPentomino(ps=test_ps, width=n_width, batch_size=1024, blur=test_blur)),
+    ])
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
@@ -73,8 +73,8 @@ for n_train, n_width in itertools.product(n_trains, n_widths):
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
-            train_task=SameDifferentPentomino(ps=train_ps, blur=blur, random_blur=random_blur),
-            test_task=SameDifferentPentomino(ps=test_ps, batch_size=1024, blur=test_blur),
+            train_task=SameDifferentPentomino(ps=train_ps, width=n_width, blur=blur, random_blur=random_blur),
+            test_task=SameDifferentPentomino(ps=test_ps, width=n_width, batch_size=1024, blur=test_blur),
             info={'log10_gamma0': log10_gamma0})
         all_cases.append(c)
 
