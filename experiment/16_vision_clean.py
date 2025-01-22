@@ -224,13 +224,13 @@ def extract_plot_vals(row):
 
     return pd.Series([
         row['name'],
-        len(row['train_task'].inc_set),
-        row['train_task'].n_patches,
+        len(row['train_task'].pieces),
+        row['train_task'].width,
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
         row['info']['acc_best']
-    ], index=['name', 'n_pieces', 'n_patches', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_best'])
+    ], index=['name', 'n_pieces', 'width', 'gamma0', 'acc_seen', 'acc_unseen', 'acc_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
@@ -238,9 +238,33 @@ plot_df
 
 # <codecell>
 mdf = plot_df.copy()
-mdf = mdf[mdf['n_pieces'] == 1024]
+mdf = mdf[mdf['n_pieces'] == 14]
 
-sns.lineplot(mdf, x='n_patches', y='acc_best', hue='gamma0', marker='o')
+g = sns.lineplot(mdf, x='width', y='acc_best', hue='gamma0', marker='o')
+g.figure.set_size_inches(3.5, 2.7)
+
+g.set_ylim((0.45, 1.02))
+g.axhline(y=0.5, color='gray', linestyle='dashed')
+
+g.set_xscale('log', base=2)
+
+handles, labels = plt.gca().get_legend_handles_labels()
+order = np.arange(len(handles))[::-1]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
+
+g.legend_.set_title('')
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    t.set_text('$\gamma = 10^{%s}$' % text)
+
+
+g.set_xlabel('# patches')
+g.set_ylabel('Test accuracy')
+
+g.figure.tight_layout()
+
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
 # <codecell>
 # CIFAR-100

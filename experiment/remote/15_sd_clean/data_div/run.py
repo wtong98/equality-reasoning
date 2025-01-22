@@ -20,9 +20,9 @@ run_split = 12
 
 train_iters = 25_000
 n_vocab = 2**np.arange(1, 11)
-log10_gs = np.linspace(-4, 0, num=11)
-n_dims = [16, 32, 64, 128, 256, 512]
-n_widths = [128, 256, 512, 1024]
+log10_gs = np.linspace(-5, 0, num=6)
+n_dims = [16, 32, 64, 128, 256, 512, 1024]
+n_widths = [1024]
 base_lr = 10
 
 n_layers = 1
@@ -44,19 +44,19 @@ test_tasks = []
 for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
     noise = sig2
 
-    all_cases.extend([
-        Case(f'RF', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
+    # all_cases.extend([
+    #     Case(f'RF', 
+    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
+    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+    #         train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
+    #         test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
 
-        Case(f'Adam', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-            test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
-    ])
+    #     Case(f'Adam', 
+    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
+    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+    #         train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
+    #         test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise)),
+    # ])
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
@@ -90,7 +90,10 @@ for case in all_cases:
     case.state = None
     case.train_task.symbols = None
     case.test_task.symbols = None
-    # case.hist = None
+
+    hist_acc = [m.accuracy.item() for m in case.hist['test']]
+    case.info['acc_best'] = max(hist_acc)
+    case.hist = None
 
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
