@@ -22,7 +22,7 @@ from model.transformer import TransformerConfig
 from task.same_different import SameDifferentPentomino, SameDifferentPsvrt, gen_patches
 from task.pentomino import pieces
 
-# set_theme()
+set_theme()
 
 # <codecell>
 ### PSVRT
@@ -59,11 +59,19 @@ for g in gs.axes.ravel():
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
 mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 
-g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
-sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
+g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o')
+# sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
 
-g.figure.set_size_inches(5, 4)
+g.figure.set_size_inches(3.5, 2.7)
+
+g.set_ylim((0.45, 1.02))
+g.axhline(y=0.5, color='gray', linestyle='dashed')
+
 g.set_xscale('log', base=2)
+
+handles, labels = plt.gca().get_legend_handles_labels()
+order = np.arange(len(handles))[::-1]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 
 g.legend_.set_title('')
 
@@ -74,17 +82,17 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     else:
-        t.set_text(f'$\gamma_0$ = 1e{text}')
+        t.set_text('$\gamma = 10^{%s}$' % text)
 
-g.set_xlabel('# shapes')
+
+g.set_xlabel('# shapes ($L$)')
 g.set_ylabel('Test accuracy')
 
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/psvrt_acc_sample.png', bbox_inches='tight')
+g.figure.savefig('fig/ccn/psvrt_acc_by_l.svg', bbox_inches='tight')
 
-# <codecell>
 # <codecell>
 ### PSVRT
 df = collate_dfs('remote/16_vision_clean/psvrt_large')
@@ -111,8 +119,37 @@ plot_df
 mdf = plot_df.copy()
 mdf = mdf[mdf['n_pieces'] == 1024]
 
-sns.lineplot(mdf, x='n_patches', y='acc_best', hue='gamma0', marker='o')
+g = sns.lineplot(mdf, x='n_patches', y='acc_best', hue='gamma0', marker='o')
+g.figure.set_size_inches(3.5, 2.7)
 
+g.set_ylim((0.45, 1.02))
+g.axhline(y=0.5, color='gray', linestyle='dashed')
+
+g.set_xscale('log', base=2)
+
+handles, labels = plt.gca().get_legend_handles_labels()
+order = np.arange(len(handles))[::-1]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
+
+g.legend_.set_title('')
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    if 'Adam' in text:
+        t.set_text('Adam')
+    elif 'RF' in text:
+        t.set_text('RF')
+    else:
+        t.set_text('$\gamma = 10^{%s}$' % text)
+
+
+g.set_xlabel('# patches')
+g.set_ylabel('Test accuracy')
+
+g.figure.tight_layout()
+
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+plt.savefig('fig/ccn/psvrt_acc_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 ### PENTOMINO
@@ -149,22 +186,25 @@ for g in gs.axes.ravel():
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
 mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 
-g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
-sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
+g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o')
+# sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
 
-g.figure.set_size_inches(5, 4)
+handles, labels = plt.gca().get_legend_handles_labels()
+order = np.arange(len(handles))[::-1]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
+
+g.set_ylim((0.45, 1.02))
+g.axhline(y=0.5, color='gray', linestyle='dashed')
+g.axhline(y=1, color='white', linestyle='dashed', alpha=0)
+
+g.figure.set_size_inches(3.5, 2.7)
 # g.set_xscale('log', base=2)
 
 g.legend_.set_title('')
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    if 'Adam' in text:
-        t.set_text('Adam')
-    elif 'RF' in text:
-        t.set_text('RF')
-    else:
-        t.set_text(f'$\gamma_0$ = 1e{text}')
+    t.set_text('$\gamma = 10^{%s}$' % text)
 
 g.set_xlabel('# shapes')
 g.set_ylabel('Test accuracy')
@@ -172,7 +212,7 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/pentomino_acc_sample.png', bbox_inches='tight')
+g.figure.savefig('fig/ccn/pentomino_acc_by_l.svg', bbox_inches='tight')
 
 # <codecell>
 ### PENTOMINO LARGE
@@ -224,9 +264,6 @@ df
 
 # <codecell>
 def extract_plot_vals(row):
-    # l = int(len(hist_acc) * 0.25)
-    # hist_acc = hist_acc[:l]
-
     return pd.Series([
         row['name'],
         row['info']['n_classes'],
@@ -242,7 +279,6 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
-
 # <codecell>
 mdf = plot_df.melt(id_vars=['name', 'n_classes', 'gamma0', 'preprocess', 'actv'], var_name='acc_type', value_name='acc')
 
@@ -250,4 +286,36 @@ gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', row='actv', row_or
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
    
-plt.savefig('fig/cifar100_vgg_samp.png')
+# plt.savefig('fig/cifar100_vgg_samp.png')
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[mdf['actv'] == 'relu4_1']
+
+g = sns.lineplot(mdf, x='n_classes', y='acc_best', hue='gamma0', marker='o')
+handles, labels = plt.gca().get_legend_handles_labels()
+order = np.arange(len(handles))[::-1]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
+
+# g.set_ylim((0.45, 1.02))
+# g.axhline(y=0.5, color='gray', linestyle='dashed')
+# g.axhline(y=1, color='white', linestyle='dashed', alpha=0)
+
+g.figure.set_size_inches(3.5, 2.7)
+# g.set_xscale('log', base=2)
+
+g.legend_.set_title('')
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    t.set_text('$\gamma = 10^{%s}$' % text)
+
+g.set_xlabel('# shapes')
+g.set_ylabel('Test accuracy')
+
+g.set_xscale('log', base=2)
+
+g.figure.tight_layout()
+
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+plt.savefig('fig/ccn/cifar100_acc_by_l.svg')

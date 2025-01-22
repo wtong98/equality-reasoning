@@ -70,7 +70,7 @@ adf = plot_df[
 mdf = adf[adf['name'].str.contains('gamma')]
 mdf2 = adf[~adf['name'].str.contains('gamma')]
 
-g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
+g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', alpha=0.7)
 # sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
 
 xs = np.unique(mdf['n_symbols'])
@@ -116,7 +116,7 @@ mdf = mdf[
     & mdf['name'].str.contains('gamma')
     ]
 
-g = sns.lineplot(mdf, x='n_dims', y='acc_best', hue='gamma0', marker='o', palette='rocket_r')
+g = sns.lineplot(mdf, x='n_dims', y='acc_best', hue='gamma0', marker='o')
 
 g.set_ylim((0.45, 1.02))
 g.axhline(y=0.5, color='gray', linestyle='dashed')
@@ -455,6 +455,8 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
 
     plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
     plt.show()
+
+    break
 
 # <codecell>
 
