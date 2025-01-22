@@ -71,7 +71,7 @@ mdf = adf[adf['name'].str.contains('gamma')]
 mdf2 = adf[~adf['name'].str.contains('gamma')]
 
 g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', palette='rocket_r', alpha=0.7)
-sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
+# sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
 
 xs = np.unique(mdf['n_symbols'])
 acc_est = pred_rich_acc(xs, a_raw=1.5)
@@ -81,10 +81,13 @@ tdf = pd.DataFrame({'n_symbols': xs, 'acc_best': acc_est})
 tdf['name'] = 'Theory'
 sns.lineplot(tdf, x='n_symbols', y='acc_best', hue='name', ax=g, palette=['red'], linestyle='dashed')
 
+g.set_ylim((0.45, 1.02))
+g.axhline(y=0.5, color='gray', linestyle='dashed')
+
 g.legend_.set_title('')
 
 handles, labels = plt.gca().get_legend_handles_labels()
-order = [8, 5, 4, 3, 2, 1, 0, 6, 7]
+order = [6, 5, 4, 3, 2, 1, 0]
 plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 
 for t in g.legend_.get_texts():
@@ -103,7 +106,38 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_acc.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[
+    (mdf['n_symbols'] == 16)
+    & (mdf['n_width'] == 1024)
+    & mdf['name'].str.contains('gamma')
+    ]
+
+g = sns.lineplot(mdf, x='n_dims', y='acc_best', hue='gamma0', marker='o', palette='rocket_r')
+
+g.set_ylim((0.45, 1.02))
+g.axhline(y=0.5, color='gray', linestyle='dashed')
+
+g.legend_.set_title('')
+
+handles, labels = plt.gca().get_legend_handles_labels()
+order = [5, 4, 3, 2, 1, 0]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    t.set_text('$\gamma$ = $10^{%s}$' % text)
+
+g.set_xlabel('Input dimension ($d$)')
+g.set_ylabel('Test accuracy')
+g.set_xscale('log', base=2)
+
+g.figure.tight_layout()
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -191,7 +225,7 @@ g = sns.heatmap(mdf)
 xs = 2**np.linspace(-5, 8)
 g.plot(xs, 1.27 * xs - 1)
 
-# g.figure.savefig('fig/lazy_sweep_ndim_v_nsym_sample.png')
+g.figure.savefig('fig/lazy_sweep_ndim_v_nsym_sample.png')
 
 # <codecell>
 ### LAZY VAR WIDTH
