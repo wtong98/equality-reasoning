@@ -19,9 +19,9 @@ print('RUN ID', run_id)
 run_split = 12
 
 train_iters = 100_000
-n_vocab = np.round(2**np.linspace(1, 10, 20)).astype(int)
+n_vocab = np.round(2**np.linspace(2, 9, 20)).astype(int)
 log10_gs = [-5, 0]
-n_dims = np.round(2**np.linspace(1, 10, 20)).astype(int)
+n_dims = np.round(2**np.linspace(2, 9, 20)).astype(int)
 n_widths = [4096]
 base_lr = 10
 

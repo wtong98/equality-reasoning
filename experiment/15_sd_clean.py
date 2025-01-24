@@ -218,7 +218,7 @@ mdf = mdf[['n_symbols', 'n_dims', 'acc_best']]
 mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
-g = sns.heatmap(mdf)
+g = sns.heatmap(mdf, vmin=0.5, vmax=1)
 xs = 2**np.linspace(-5, 8)
 g.plot(xs, 1.27 * xs - 1)
 

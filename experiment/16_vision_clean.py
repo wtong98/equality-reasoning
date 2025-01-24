@@ -246,8 +246,6 @@ g.figure.set_size_inches(3.5, 2.7)
 g.set_ylim((0.45, 1.02))
 g.axhline(y=0.5, color='gray', linestyle='dashed')
 
-g.set_xscale('log', base=2)
-
 handles, labels = plt.gca().get_legend_handles_labels()
 order = np.arange(len(handles))[::-1]
 plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
@@ -259,12 +257,17 @@ for t in g.legend_.get_texts():
     t.set_text('$\gamma = 10^{%s}$' % text)
 
 
+ticks = np.unique(mdf['width'])[::2]
+g.set_xticks(ticks)
+g.set_xticklabels(ticks)
+
 g.set_xlabel('# patches')
 g.set_ylabel('Test accuracy')
 
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+plt.savefig('fig/ccn/pentomino_acc_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 # CIFAR-100
