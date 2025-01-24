@@ -211,7 +211,7 @@ plot_df
 mdf = plot_df.copy()
 mdf = mdf[
     (mdf['n_width'] == 4096)
-    & (mdf['gamma0'] == -5)
+    & (mdf['gamma0'] == 0)
     ]
 
 mdf = mdf[['n_symbols', 'n_dims', 'acc_best']]

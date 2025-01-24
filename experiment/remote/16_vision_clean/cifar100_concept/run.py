@@ -20,14 +20,14 @@ from task.same_different import SameDifferentCifar100
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 12
+run_split = 16
 sleep_delay = True
 
 train_iters = 50_000
 n_hidden = 1024
 
 n_trains = [90]
-log10_gs = np.linspace(-5, 0, num=6)
+log10_gs = [-5, 0]
 base_lr = 1
 
 preprocess = [True]
@@ -42,16 +42,16 @@ layer_names = ['relu2_1',
                'relu4_3']
 
 ### START TEST CONFIGS
-run_split = 1
-sleep_delay = False
+# run_split = 1
+# sleep_delay = False
 
-train_iters = 1000
-n_hidden = 512
+# train_iters = 1000
+# n_hidden = 512
 
-n_trains = [8]
-log10_gs = [0]
-preprocess = [True]
-layer_names = ['relu5_3']
+# n_trains = [8]
+# log10_gs = [0]
+# preprocess = [True]
+# layer_names = ['relu5_3']
 ### END TEST CONFIGS
 
 if sleep_delay:

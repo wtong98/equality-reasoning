@@ -19,9 +19,14 @@ print('RUN ID', run_id)
 run_split = 12
 
 train_iters = 100_000
-n_vocab = np.round(2**np.linspace(2, 9, 20)).astype(int)
 log10_gs = [-5, 0]
-n_dims = np.round(2**np.linspace(2, 9, 20)).astype(int)
+
+n_vocab_rich = np.round(2**np.linspace(1, 9, 20)).astype(int)
+n_dims_rich = np.round(2**np.linspace(1, 9, 20)).astype(int)
+
+n_vocab_lazy = np.round(2**np.linspace(4, 9, 20)).astype(int)
+n_dims_lazy = np.round(2**np.linspace(4, 9, 20)).astype(int)
+
 n_widths = [4096]
 base_lr = 10
 
@@ -41,9 +46,11 @@ sig2 = 0
 all_cases = []
 test_tasks = []
 
-for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
-    noise = sig2
-    for log10_gamma0 in log10_gs:
+for log10_gamma0, n_dims, n_vocab in zip(log10_gs, [n_dims_lazy, n_dims_rich], [n_vocab_lazy, n_vocab_rich]):
+
+    for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
+        noise = sig2
+
         gamma0 = 10**log10_gamma0
         gamma = gamma0 * np.sqrt(n_hidden)
         lr = gamma0**2 * base_lr
