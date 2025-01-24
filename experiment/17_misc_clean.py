@@ -272,3 +272,50 @@ plt.axis('off')
 plt.savefig('fig/ccn/concept/pentomino_lazy_pos.svg')
 
 # <codecell>
+### CIFAR-100 CONCEPT
+df = collate_dfs('remote/16_vision_clean/cifar100_concept')
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    return pd.Series([
+        row['name'],
+        row['info']['n_classes'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        row['info']['preprocess'],
+        row['info']['actv'],
+        row['info']['acc_best'],
+        row['info']['params']
+    ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'preprocess', 'actv', 'acc_best', 'params'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# %%
+state = plot_df.loc[1]
+
+W = state.params['Dense_0']['kernel']
+a = state.params['Dense_1']['kernel'].flatten()
+
+sort_idxs = np.argsort(a)
+
+W_sort = W[:,sort_idxs]
+n_dims = W_sort.shape[0] // 2
+
+w1, w2 = W_sort[:n_dims], W_sort[n_dims:]
+dots = w1.T @ w2 / (np.linalg.norm(w1, axis=0) * np.linalg.norm(w2, axis=0))
+cos_dists = np.diag(dots)
+
+
+plt.gcf().set_size_inches(3.5, 2.5)
+
+plt.scatter(a[sort_idxs], cos_dists)
+plt.xlabel('$a_i$')
+plt.ylabel(r'$(\mathbf{v}_i^1 \cdot \mathbf{v}_i^2)\, / \, \ell_i$')
+plt.gca().spines['top'].set_visible(False)
+plt.gca().spines['right'].set_visible(False)
+
+plt.tight_layout()

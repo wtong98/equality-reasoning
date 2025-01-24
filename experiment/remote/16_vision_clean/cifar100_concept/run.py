@@ -20,14 +20,14 @@ from task.same_different import SameDifferentCifar100
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 16
+run_split = 12
 sleep_delay = True
 
 train_iters = 50_000
 n_hidden = 1024
 
 n_trains = [90]
-log10_gs = [-5, 0]
+log10_gs = [-5, -1, 0]
 base_lr = 1
 
 preprocess = [True]

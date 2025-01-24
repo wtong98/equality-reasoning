@@ -25,7 +25,7 @@ n_hidden = 512
 
 n_trains = [2, 4, 8, 10, 12, 14, 16]
 log10_gs = np.linspace(-5, 0, num=6)
-base_lr = 1
+base_lr = 10
 blur = 0.5
 test_blur = 0
 random_blur = True

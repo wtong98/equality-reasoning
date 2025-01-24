@@ -43,8 +43,6 @@ df
 
 # <codecell>
 def extract_plot_vals(row):
-    hist_acc = [m['accuracy'].item() for m in row['hist']['test']]
-
     return pd.Series([
         row['name'],
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
@@ -53,8 +51,7 @@ def extract_plot_vals(row):
         row['config']['n_hidden'],
         row['info']['acc_seen'].item(),
         row['info']['acc_unseen'].item(),
-        max(hist_acc),
-        # min(hist_loss),
+        row['info']['acc_best']
     ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_width', 'acc_seen', 'acc_unseen', 'acc_best'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
@@ -71,6 +68,7 @@ mdf = adf[adf['name'].str.contains('gamma')]
 mdf2 = adf[~adf['name'].str.contains('gamma')]
 
 g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', alpha=0.7)
+g.figure.set_size_inches((3.5, 2.7))
 # sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
 
 xs = np.unique(mdf['n_symbols'])
@@ -117,6 +115,7 @@ mdf = mdf[
     ]
 
 g = sns.lineplot(mdf, x='n_dims', y='acc_best', hue='gamma0', marker='o')
+g.figure.set_size_inches((3.5, 2.7))
 
 g.set_ylim((0.45, 1.02))
 g.axhline(y=0.5, color='gray', linestyle='dashed')
