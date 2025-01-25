@@ -273,11 +273,13 @@ plt.savefig('fig/ccn/concept/pentomino_lazy_pos.svg')
 
 # <codecell>
 ### CIFAR-100 CONCEPT
-df = collate_dfs('remote/16_vision_clean/cifar100_concept')
+df = collate_dfs('remote/16_vision_clean/cifar100_concept', show_progress=True)
 df
 
 # <codecell>
 def extract_plot_vals(row):
+    params = jax.tree.map(np.array, row['info']['params'])
+
     return pd.Series([
         row['name'],
         row['info']['n_classes'],
@@ -287,7 +289,7 @@ def extract_plot_vals(row):
         row['info']['preprocess'],
         row['info']['actv'],
         row['info']['acc_best'],
-        row['info']['params']
+        params
     ], index=['name', 'n_classes', 'gamma0', 'acc_seen', 'acc_unseen', 'preprocess', 'actv', 'acc_best', 'params'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
@@ -295,7 +297,7 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
 plot_df
 
 # %%
-state = plot_df.loc[1]
+state = plot_df.loc[8]
 
 W = state.params['Dense_0']['kernel']
 a = state.params['Dense_1']['kernel'].flatten()
@@ -319,3 +321,4 @@ plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 
 plt.tight_layout()
+plt.savefig('fig/ccn/concept/cifar100_rich.svg')

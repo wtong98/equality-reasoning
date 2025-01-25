@@ -81,11 +81,11 @@ test_pieces = np.arange(64, 100)
 
 preprocess = True
 
-train_task = SameDifferentCifar100(ps=train_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, batch_size=256)
-test_task = SameDifferentCifar100(ps=test_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, batch_size=256)
+train_task = SameDifferentCifar100(ps=train_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, batch_size=128)
+test_task = SameDifferentCifar100(ps=test_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, batch_size=128)
 
 # <codecell>
-gamma0 = 1
+gamma0 = 0.1
 gamma = gamma0
 gamma = np.sqrt(n_hidden) * gamma0
 lr = gamma0**2 * 1

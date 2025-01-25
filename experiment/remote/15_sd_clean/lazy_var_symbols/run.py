@@ -21,11 +21,11 @@ run_split = 12
 train_iters = 100_000
 log10_gs = [-5, 0]
 
-n_vocab_rich = np.round(2**np.linspace(1, 9, 20)).astype(int)
-n_dims_rich = np.round(2**np.linspace(1, 9, 20)).astype(int)
+n_vocab_rich = np.round(2**np.linspace(1, 10, 20)).astype(int)
+n_dims_rich = np.round(2**np.linspace(1, 10, 20)).astype(int)
 
-n_vocab_lazy = np.round(2**np.linspace(4, 9, 20)).astype(int)
-n_dims_lazy = np.round(2**np.linspace(4, 9, 20)).astype(int)
+n_vocab_lazy = np.round(2**np.linspace(4, 10, 20)).astype(int)
+n_dims_lazy = np.round(2**np.linspace(4, 10, 20)).astype(int)
 
 n_widths = [4096]
 base_lr = 10

@@ -76,11 +76,19 @@ def summon_dir(path: str, clear_if_exists=False):
 def collate_dfs(df_dir, show_progress=False, concat=True):
     pkl_path = Path(df_dir)
     dfs = []
+
+    it = pkl_path.iterdir()
     if show_progress:
-        for f in tqdm(list(pkl_path.iterdir())):
-            dfs.append(pd.read_pickle(f))
-    else:
-        dfs = [pd.read_pickle(f) for f in pkl_path.iterdir() if f.suffix == '.pkl']
+        it = tqdm(list(it))
+    
+    for f in it:
+        if f.suffix == '.pkl':
+            try:
+                df = pd.read_pickle(f)
+                dfs.append(df)
+            except:
+                print(f'warn: fail to read {f}')
+
     if concat:
         dfs = pd.concat(dfs)
 

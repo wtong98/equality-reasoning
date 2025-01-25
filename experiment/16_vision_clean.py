@@ -204,7 +204,7 @@ g.legend_.set_title('')
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text('$\gamma = 10^{%s}$' % text)
+    t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
 
 g.set_xlabel('# shapes')
 g.set_ylabel('Test accuracy')

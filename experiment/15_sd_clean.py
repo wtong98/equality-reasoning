@@ -210,6 +210,24 @@ plot_df
 mdf = plot_df.copy()
 mdf = mdf[
     (mdf['n_width'] == 4096)
+    & (mdf['gamma0'] == -5)
+    ]
+
+mdf = mdf[['n_symbols', 'n_dims', 'acc_best']]
+mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
+mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
+
+mdf = mdf.iloc[::-1]
+g = sns.heatmap(mdf, vmin=0.5, vmax=1)
+xs = 2**np.linspace(-5, 8)
+g.plot(xs, 20 - 2 * xs + 6.5, color='black', linestyle='dashed')
+
+g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[
+    (mdf['n_width'] == 4096)
     & (mdf['gamma0'] == 0)
     ]
 
@@ -217,11 +235,12 @@ mdf = mdf[['n_symbols', 'n_dims', 'acc_best']]
 mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
+mdf = mdf.iloc[::-1]
 g = sns.heatmap(mdf, vmin=0.5, vmax=1)
-xs = 2**np.linspace(-5, 8)
-g.plot(xs, 1.27 * xs - 1)
+# xs = 2**np.linspace(-5, 8)
+# g.plot(xs, 0 * xs + 16, color='black', linestyle='dashed')
 
-# g.figure.savefig('fig/lazy_sweep_ndim_v_nsym_sample.png')
+g.figure.savefig('fig/ccn/rich_ndim_v_nsym.svg')
 
 # <codecell>
 ### LAZY VAR WIDTH
