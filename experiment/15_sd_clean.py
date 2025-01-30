@@ -24,7 +24,7 @@ from task.same_different import SameDifferent
 def pred_rich_acc(n_points, a_raw=1.5):
     a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
     # pt = np.sqrt(2 * n_points) * np.sqrt(2 / (np.pi - 2)) * a
-    pt = (n_points - 1) * np.sqrt(2 / (np.pi - 2)) * a
+    # pt = (n_points - 1) * np.sqrt(2 / (np.pi - 2)) * a
     pt = np.sqrt(2 * n_points * (1/2 * n_points - 1)) * np.sqrt(2 / (np.pi - 2)) * a
     neg_acc = norm.cdf(pt)
     return (neg_acc + 1) / 2
@@ -73,7 +73,7 @@ g.figure.set_size_inches((3.5, 2.7))
 
 xs = np.unique(mdf['n_symbols'])
 acc_est = pred_rich_acc(xs, a_raw=1.5)
-acc_est[0] = 0.75
+# acc_est[0] = 0.75
 
 tdf = pd.DataFrame({'n_symbols': xs, 'acc_best': acc_est})
 tdf['name'] = 'Theory'
@@ -104,7 +104,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
+# g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
 
 # <codecell>
 mdf = plot_df.copy()
@@ -220,7 +220,7 @@ mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 mdf = mdf.iloc[::-1]
 g = sns.heatmap(mdf, vmin=0.5, vmax=1)
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, 20 - 2 * xs + 6.5, color='black', linestyle='dashed')
+g.plot(xs, 20 - 2 * xs + 7, color='black', linestyle='dashed')
 
 g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
 
