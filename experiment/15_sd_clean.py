@@ -25,7 +25,8 @@ def pred_rich_acc(n_points, a_raw=1.5):
     a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
     # pt = np.sqrt(2 * n_points) * np.sqrt(2 / (np.pi - 2)) * a
     # pt = (n_points - 1) * np.sqrt(2 / (np.pi - 2)) * a
-    pt = np.sqrt(2 * n_points * (1/2 * n_points - 1)) * np.sqrt(2 / (np.pi - 2)) * a
+    pt = np.sqrt(2 * n_points * (1/2 * n_points - 0.5)) * np.sqrt(2 / (np.pi - 2)) * a
+    print(pt)
     neg_acc = norm.cdf(pt)
     return (neg_acc + 1) / 2
 
@@ -73,7 +74,7 @@ g.figure.set_size_inches((3.5, 2.7))
 
 xs = np.unique(mdf['n_symbols'])
 acc_est = pred_rich_acc(xs, a_raw=1.5)
-# acc_est[0] = 0.75
+acc_est[0] = 0.75
 
 tdf = pd.DataFrame({'n_symbols': xs, 'acc_best': acc_est})
 tdf['name'] = 'Theory'
@@ -136,7 +137,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
+# g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -222,7 +223,7 @@ g = sns.heatmap(mdf, vmin=0.5, vmax=1)
 xs = 2**np.linspace(-5, 8)
 g.plot(xs, 20 - 2 * xs + 7, color='black', linestyle='dashed')
 
-g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
+# g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
 
 # <codecell>
 mdf = plot_df.copy()
@@ -468,14 +469,12 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
     g.figure.tight_layout()
     sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
-    plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
+    # plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
     plt.show()
 
     break
 
 # <codecell>
-
-
 mdf = pd.concat((plot_df, df_bayes))
 
 # mdf = mdf[mdf['sig2'] > 0.05]
@@ -487,6 +486,76 @@ for g in gs.axes.ravel():
     # g.set_yscale('log')
 
 plt.savefig('fig/noise_sweep_diff_sig_best_sample.png')
+
+
+# <codecell>
+df = collate_dfs('remote/15_sd_clean/rich', concat=True)
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    return pd.Series([
+        row['name'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
+        row['train_task'].n_symbols,
+        row['train_task'].n_dims,
+        row['config']['n_hidden'],
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        row['info']['acc_best']
+    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_width', 'acc_seen', 'acc_unseen', 'acc_best'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+adf = plot_df[
+    (plot_df['n_dims'] == 512)
+    & (plot_df['n_width'] == 1024)
+    ]
+
+mdf = adf[adf['name'].str.contains('gamma')]
+mdf2 = adf[~adf['name'].str.contains('gamma')]
+
+g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', alpha=0.7)
+g.figure.set_size_inches((3.5, 2.7))
+# sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
+
+xs = np.unique(mdf['n_symbols'])
+acc_est = pred_rich_acc(xs, a_raw=1.5)
+acc_est[0] = 0.75
+
+tdf = pd.DataFrame({'n_symbols': xs, 'acc_best': acc_est})
+tdf['name'] = 'Theory'
+sns.lineplot(tdf, x='n_symbols', y='acc_best', hue='name', ax=g, palette=['red'], linestyle='dashed')
+
+# g.set_ylim((0.45, 1.02))
+# g.axhline(y=0.5, color='gray', linestyle='dashed')
+
+g.legend_.set_title('')
+
+handles, labels = plt.gca().get_legend_handles_labels()
+order = [6, 5, 4, 3, 2, 1, 0]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
+
+for t in g.legend_.get_texts():
+    text = t.get_text()
+    if 'Adam' in text:
+        t.set_text('Adam')
+    elif 'RF' in text:
+        t.set_text('RF')
+    elif text != 'Theory':
+        t.set_text('$\gamma$ = $10^{%s}$' % np.round(float(text), decimals=1))
+
+g.set_xlabel('# symbols ($L$)')
+g.set_ylabel('Test accuracy')
+# g.set_xscale('log', base=2)
+
+
+g.figure.tight_layout()
+sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+# g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
 
 
 # <codecell>

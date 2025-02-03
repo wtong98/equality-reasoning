@@ -9,6 +9,7 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=wtong@g.harvard.edu
 #SBATCH --account=pehlevan_lab
+#SBATCH --exclude=holygpu8a19604
 
 source ../../../../../venv_haystack/bin/activate
 python run.py ${SLURM_ARRAY_TASK_ID}
