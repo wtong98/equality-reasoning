@@ -62,10 +62,11 @@ mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o')
 # sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
 
-g.figure.set_size_inches(3.5, 2.7)
+g.figure.set_size_inches(3, 2.5)
 
 g.set_ylim((0.45, 1.02))
-g.axhline(y=0.5, color='gray', linestyle='dashed')
+g.axhline(y=0.5, xmin=0, xmax=0.75, color='gray', linestyle='dashed')
+g.text(x=2**9.5, y=0.49, s='chance', color='gray', fontsize=10)
 
 g.set_xscale('log', base=2)
 
@@ -82,10 +83,10 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     else:
-        t.set_text('$\gamma = 10^{%s}$' % text)
+        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
 
 
-g.set_xlabel('# shapes ($L$)')
+g.set_xlabel('# bit-patterns')
 g.set_ylabel('Test accuracy')
 
 g.figure.tight_layout()
@@ -120,12 +121,13 @@ mdf = plot_df.copy()
 mdf = mdf[mdf['n_pieces'] == 1024]
 
 g = sns.lineplot(mdf, x='n_patches', y='acc_best', hue='gamma0', marker='o')
-g.figure.set_size_inches(3.5, 2.7)
+g.figure.set_size_inches(3.1, 2.5)
 
 g.set_ylim((0.45, 1.02))
 g.axhline(y=0.5, color='gray', linestyle='dashed')
+g.text(x=2, y=0.51, s='chance', color='gray', fontsize=10)
 
-g.set_xscale('log', base=2)
+# g.set_xscale('log', base=2)
 
 handles, labels = plt.gca().get_legend_handles_labels()
 order = np.arange(len(handles))[::-1]
@@ -140,7 +142,7 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     else:
-        t.set_text('$\gamma = 10^{%s}$' % text)
+        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
 
 
 g.set_xlabel('# patches')
@@ -196,8 +198,9 @@ plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 g.set_ylim((0.45, 1.02))
 g.axhline(y=0.5, color='gray', linestyle='dashed')
 g.axhline(y=1, color='white', linestyle='dashed', alpha=0)
+g.text(x=13, y=0.51, s='chance', color='gray', fontsize=10)
 
-g.figure.set_size_inches(3.5, 2.7)
+g.figure.set_size_inches(3, 2.5)
 # g.set_xscale('log', base=2)
 
 g.legend_.set_title('')
@@ -241,10 +244,12 @@ mdf = plot_df.copy()
 mdf = mdf[mdf['n_pieces'] == 14]
 
 g = sns.lineplot(mdf, x='width', y='acc_best', hue='gamma0', marker='o')
-g.figure.set_size_inches(3.5, 2.7)
+g.figure.set_size_inches(3, 2.5)
 
 g.set_ylim((0.45, 1.02))
-g.axhline(y=0.5, color='gray', linestyle='dashed')
+g.axhline(y=0.5, xmin=0.27, xmax=1, color='gray', linestyle='dashed')
+g.axhline(y=1, color='white')
+g.text(x=1.8, y=0.487, s='chance', color='gray', fontsize=10)
 
 handles, labels = plt.gca().get_legend_handles_labels()
 order = np.arange(len(handles))[::-1]
@@ -254,7 +259,7 @@ g.legend_.set_title('')
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text('$\gamma = 10^{%s}$' % text)
+    t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
 
 
 ticks = np.unique(mdf['width'])[::2]
@@ -286,7 +291,7 @@ layer_names = ['id',
                'relu5_2',
                'relu5_3']
 
-df = collate_dfs('remote/16_vision_clean/cifar100')
+df = collate_dfs('remote/16_vision_clean/cifar100', show_progress=True)
 df
 
 # <codecell>
@@ -313,7 +318,34 @@ gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', row='actv', row_or
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
    
-# plt.savefig('fig/cifar100_vgg_samp.png')
+plt.savefig('fig/cifar100_vgg_samp.png')
+
+# <codecell>
+mdf = plot_df.copy()
+for actv in tqdm(layer_names):
+    cdf = mdf[(mdf['actv'] == actv)]
+    g = sns.lineplot(cdf, x='n_classes', y='acc_best', hue='gamma0', marker='o')
+    g.figure.set_size_inches(3, 2.7)
+
+    g.legend_.set_title('')
+    g.set_ylim((0.55, 0.9))
+
+    for t in g.legend_.get_texts():
+        text = t.get_text()
+        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+
+    g.set_xlabel('# classes')
+    g.set_ylabel('Test accuracy')
+
+    g.set_xscale('log', base=2)
+
+    g.figure.tight_layout()
+    sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
+
+    g.set_title(actv)
+    plt.savefig(f'fig/ccn/cifar100_actv/{actv}.svg', bbox_inches='tight')
+    plt.show()
+    # break
 
 # <codecell>
 mdf = plot_df.copy()
@@ -328,16 +360,16 @@ plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 # g.axhline(y=0.5, color='gray', linestyle='dashed')
 # g.axhline(y=1, color='white', linestyle='dashed', alpha=0)
 
-g.figure.set_size_inches(3.5, 2.7)
+g.figure.set_size_inches(3, 2.7)
 # g.set_xscale('log', base=2)
 
 g.legend_.set_title('')
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text('$\gamma = 10^{%s}$' % text)
+    t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
 
-g.set_xlabel('# shapes')
+g.set_xlabel('# classes')
 g.set_ylabel('Test accuracy')
 
 g.set_xscale('log', base=2)

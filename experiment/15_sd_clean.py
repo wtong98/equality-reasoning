@@ -82,6 +82,7 @@ sns.lineplot(tdf, x='n_symbols', y='acc_best', hue='name', ax=g, palette=['red']
 
 g.set_ylim((0.45, 1.02))
 g.axhline(y=0.5, color='gray', linestyle='dashed')
+g.text(2**8.5, 0.51, 'chance', color='gray', fontsize=10)
 
 g.legend_.set_title('')
 
@@ -96,7 +97,8 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     elif text != 'Theory':
-        t.set_text('$\gamma$ = $10^{%s}$' % text)
+        # t.set_text('$\gamma$ = $10^{%s}$' % text)
+        t.set_text(f'$\gamma = {np.round(10**float(text), decimals=2):.2f}$')
 
 g.set_xlabel('# symbols ($L$)')
 g.set_ylabel('Test accuracy')
@@ -105,7 +107,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
 
 # <codecell>
 mdf = plot_df.copy()
@@ -120,6 +122,7 @@ g.figure.set_size_inches((3.5, 2.7))
 
 g.set_ylim((0.45, 1.02))
 g.axhline(y=0.5, color='gray', linestyle='dashed')
+g.text(2**4, 0.51, 'chance', color='gray', fontsize=10)
 
 g.legend_.set_title('')
 
@@ -129,7 +132,7 @@ plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text('$\gamma$ = $10^{%s}$' % text)
+    t.set_text(f'$\gamma = {np.round(10**float(text), decimals=2):.2f}$')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('Test accuracy')
@@ -137,7 +140,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -219,11 +222,16 @@ mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 mdf = mdf.iloc[::-1]
-g = sns.heatmap(mdf, vmin=0.5, vmax=1)
+g = sns.heatmap(mdf, vmin=0.5, vmax=1, square=False)
+g.figure.set_size_inches(3.5, 2.7)
+
 xs = 2**np.linspace(-5, 8)
 g.plot(xs, 20 - 2 * xs + 7, color='black', linestyle='dashed')
 
-# g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
+g.set_xlabel('Input dimension ($d$)')
+g.set_ylabel('# symbols ($L$)')
+
+g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
 
 # <codecell>
 mdf = plot_df.copy()
@@ -238,8 +246,13 @@ mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 mdf = mdf.iloc[::-1]
 g = sns.heatmap(mdf, vmin=0.5, vmax=1)
-# xs = 2**np.linspace(-5, 8)
-# g.plot(xs, 0 * xs + 16, color='black', linestyle='dashed')
+g.figure.set_size_inches(3.5, 2.7)
+
+xs = 2**np.linspace(-5, 8)
+g.plot(xs, 16.5 - 0 * xs, color='black', linestyle='dashed')
+
+g.set_xlabel('Input dimension ($d$)')
+g.set_ylabel('# symbols ($L$)')
 
 g.figure.savefig('fig/ccn/rich_ndim_v_nsym.svg')
 
@@ -431,7 +444,7 @@ for g in gs.axes.ravel():
 mdf = plot_df.copy()
 
 mdf = mdf[(mdf['n_width'] == 1024)]
-sigs = [0, 1, 2, 4]
+sigs = [0, 0.1, 1, 2, 4]
 all_n_dims = [64, 128, 256]
 
 for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
@@ -465,14 +478,12 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
         elif text != 'Theory':
             t.set_text('$\gamma$ = $10^{%s}$' % text)
 
-    g.figure.set_size_inches(3.5, 3)
+    g.figure.set_size_inches(3, 2.6)
     g.figure.tight_layout()
     sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
-    # plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
+    plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
     plt.show()
-
-    break
 
 # <codecell>
 mdf = pd.concat((plot_df, df_bayes))
@@ -519,7 +530,7 @@ mdf = adf[adf['name'].str.contains('gamma')]
 mdf2 = adf[~adf['name'].str.contains('gamma')]
 
 g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', alpha=0.7)
-g.figure.set_size_inches((3.5, 2.7))
+g.figure.set_size_inches((3, 2.4))
 # sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
 
 xs = np.unique(mdf['n_symbols'])
@@ -555,7 +566,7 @@ g.set_ylabel('Test accuracy')
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
 
 
 # <codecell>

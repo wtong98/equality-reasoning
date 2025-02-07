@@ -22,9 +22,9 @@ from task.same_different import *
 set_theme()
 
 # <codecell>
-n_points = 512
-n_dims = 128
-n_hidden = 128
+n_points = 2
+n_dims = 16
+n_hidden = 1024
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
@@ -72,43 +72,88 @@ cos_dists = np.diag(dots)
 # plt.rcParams.update({'font.size': 14})
 plt.gcf().set_size_inches(3.5, 2.5)
 
-plt.scatter(a[sort_idxs], cos_dists)
+plt.scatter(a[sort_idxs], cos_dists, alpha=0.5)
 plt.xlabel('$a_i$')
 plt.ylabel(r'$(\mathbf{v}_i^1 \cdot \mathbf{v}_i^2)\, / \, \ell_i$')
+plt.ylim((-1.1, 1.1))
 plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig('fig/ccn/rich_weight_struct.svg')
+plt.savefig('fig/ccn/l2_weight_struct.svg')
 
-# note: test acc attained by lazy model is ~0.7
+# note: test acc attained by lazy model is ~0.78
+
+# <codecell>
+### PCA and Same Different recovers parallel / anti-parallel features
+n_dims = 1024
+n_points = 64
+batch_size = 3000
+
+train_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True, batch_size=batch_size)
+test_task = SameDifferent(n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
+
+train_task.symbols.shape
+
+xs, ys = next(train_task)
+xs = xs @ train_task.symbols.T
+xs = xs.reshape(xs.shape[0], -1)
+
+pos_idx = ys.astype(bool)
+
+xs_pos = xs[pos_idx]
+xs_neg = xs[~pos_idx]
+
+plt.gcf().set_size_inches(2, 2)
+diff = (xs_pos.T @ xs_pos - xs_neg.T @ xs_neg) / np.sqrt(batch_size)
+im = plt.imshow(diff, vmin=-1, vmax=1, cmap='plasma')
+plt.colorbar(im,fraction=0.046, pad=0.04)
+plt.gca().set_axis_off()
+plt.title('Empirical')
+plt.tight_layout()
+
+plt.savefig('fig/ccn/xx_emp.svg')
+
+# <codecell>
+plt.gcf().set_size_inches(2, 2)
+diff = np.zeros((128, 128))
+diff[0:64,64:128] = np.eye(64)
+diff[64:128,0:64] = np.eye(64)
+im = plt.imshow(diff, vmin=-1, vmax=1, cmap='plasma')
+plt.colorbar(im,fraction=0.046, pad=0.04)
+plt.gca().set_axis_off()
+plt.title('Ideal')
+plt.tight_layout()
+
+plt.savefig('fig/ccn/xx_ideal.svg')
 
 # <codecell>
 ### PSVRT EXAMPLES
 task = SameDifferentPsvrt(patch_size=5, n_patches=3, batch_size=10, seed=3)
 xs, ys = next(task)
 
+xs = np.clip(xs + 0.15, a_max=1, a_min=0)
 plt.imshow(xs[3], cmap='binary')
 plt.axis('off')
 plt.savefig('fig/ccn/psvrt_same.svg')
 
 # <codecell>
-plt.imshow(xs[1], cmap='binary')
+plt.imshow(xs[5], cmap='binary')
 plt.axis('off')
 plt.savefig('fig/ccn/psvrt_diff.svg')
 
 # <codecell>
 ### PENTOMINO EXAMPLES
-task = SameDifferentPentomino(width=2, batch_size=10)
+task = SameDifferentPentomino(width=2, batch_size=32)
 xs, ys = next(task)
 
-xs = np.clip(xs + 0.4, a_max=1, a_min=0)
+xs = np.clip(xs + 0.15, a_max=1, a_min=0)
 plt.imshow(xs[0], cmap='binary', vmin=0)
 plt.axis('off')
-plt.savefig('fig/ccn/pentomino_same.svg')
+# plt.savefig('fig/ccn/pentomino_same.svg')
 
 # <codecell>
-plt.imshow(xs[1], cmap='binary', vmin=0)
+plt.imshow(xs[31], cmap='binary', vmin=0)
 plt.axis('off')
 plt.savefig('fig/ccn/pentomino_diff.svg')
 
