@@ -1,5 +1,11 @@
-"""Cifar100 utilities"""
+"""Cifar100 utilities
 
+To run this, you will need the cifar100 dataset locally under
+`dataset/cifar100.` This dataset can be downloaded from 
+https://www.cs.toronto.edu/~kriz/cifar.html
+"""
+
+import jax
 import numpy as np
 from pathlib import Path
 import pickle

@@ -79,7 +79,8 @@ plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig('fig/ccn/l2_weight_struct.svg')
+plt.savefig('fig/l2_weight_struct.svg')
+plt.show()
 
 # <codecell>
 ### PCA and Same Different recovers parallel / anti-parallel features
@@ -109,7 +110,8 @@ plt.gca().set_axis_off()
 plt.title('Empirical')
 plt.tight_layout()
 
-plt.savefig('fig/ccn/xx_emp.svg')
+plt.savefig('fig/xx_emp.svg')
+plt.show()
 
 # <codecell>
 plt.gcf().set_size_inches(2, 2)
@@ -122,7 +124,8 @@ plt.gca().set_axis_off()
 plt.title('Ideal')
 plt.tight_layout()
 
-plt.savefig('fig/ccn/xx_ideal.svg')
+plt.savefig('fig/xx_ideal.svg')
+plt.show()
 
 # <codecell>
 ### PSVRT EXAMPLES
@@ -132,12 +135,14 @@ xs, ys = next(task)
 xs = np.clip(xs + 0.15, a_max=1, a_min=0)
 plt.imshow(xs[3], cmap='binary')
 plt.axis('off')
-plt.savefig('fig/ccn/psvrt_same.svg')
+plt.savefig('fig/psvrt_same.svg')
+plt.show()
 
 # <codecell>
 plt.imshow(xs[5], cmap='binary')
 plt.axis('off')
-plt.savefig('fig/ccn/psvrt_diff.svg')
+plt.savefig('fig/psvrt_diff.svg')
+plt.show()
 
 # <codecell>
 ### PENTOMINO EXAMPLES
@@ -147,12 +152,14 @@ xs, ys = next(task)
 xs = np.clip(xs + 0.15, a_max=1, a_min=0)
 plt.imshow(xs[0], cmap='binary', vmin=0)
 plt.axis('off')
-# plt.savefig('fig/ccn/pentomino_same.svg')
+plt.savefig('fig/pentomino_same.svg')
+plt.show()
 
 # <codecell>
 plt.imshow(xs[31], cmap='binary', vmin=0)
 plt.axis('off')
-plt.savefig('fig/ccn/pentomino_diff.svg')
+plt.savefig('fig/pentomino_diff.svg')
+plt.show()
 
 # <codecell>
 ### CIFAR-100 examples
@@ -170,7 +177,8 @@ xs_sel = np.concat(xs_sel, axis=1)
 
 plt.imshow(xs_sel)
 plt.axis('off')
-plt.savefig('fig/ccn/cifar100_same.svg')
+plt.savefig('fig/cifar100_same.svg')
+plt.show()
 
 # %%
 idx = 19
@@ -181,7 +189,8 @@ xs_sel = np.concat(xs_sel, axis=1)
 
 plt.imshow(xs_sel)
 plt.axis('off')
-plt.savefig('fig/ccn/cifar100_diff.svg')
+plt.savefig('fig/cifar100_diff.svg')
+plt.show()
 
 # <codecell>
 n_points = 256
@@ -233,10 +242,11 @@ plt.colorbar()
 plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
 plt.axis('off')
 
-plt.savefig('fig/ccn/concept/psvrt_lazy_neg.svg')
+plt.savefig('fig/concept/psvrt_lazy_neg.svg')
+plt.show()
 
 # <codecell>
-idx = -3
+idx = -1
 
 plt.imshow(W_sort[:,idx].reshape(10, 10), vmin=-0.1, vmax=0.1, cmap='viridis')
 plt.axhline(y=4.5, color='white')
@@ -246,7 +256,8 @@ plt.colorbar()
 plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
 plt.axis('off')
 
-plt.savefig('fig/ccn/concept/psvrt_lazy_pos.svg')
+plt.savefig('fig/concept/psvrt_lazy_pos.svg')
+plt.show()
 
 # <codecell>
 ### PENTOMINOS
@@ -298,7 +309,8 @@ plt.colorbar()
 plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
 plt.axis('off')
 
-plt.savefig('fig/ccn/concept/pentomino_lazy_neg.svg')
+plt.savefig('fig/concept/pentomino_lazy_neg.svg')
+plt.show()
 
 # <codecell>
 idx = -1
@@ -311,7 +323,8 @@ plt.colorbar()
 plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
 plt.axis('off')
 
-plt.savefig('fig/ccn/concept/pentomino_lazy_pos.svg')
+plt.savefig('fig/concept/pentomino_lazy_pos.svg')
+plt.show()
 
 # <codecell>
 ### CIFAR-100 CONCEPT
@@ -363,4 +376,5 @@ plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig('fig/ccn/concept/cifar100_rich.svg')
+plt.savefig('fig/concept/cifar100_rich.svg')
+plt.show()

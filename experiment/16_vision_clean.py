@@ -35,15 +35,6 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
-# <codecell>
-mdf = plot_df.melt(id_vars=['name', 'n_pieces', 'gamma0'], var_name='acc_type', value_name='acc')
-mdf
-
-gs = sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
-
-plt.savefig('fig/psvrt_acc_sample.png')
 
 # <codecell>
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
@@ -81,7 +72,8 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/psvrt_acc_by_l.svg', bbox_inches='tight')
+g.figure.savefig('fig/psvrt_acc_by_l.svg', bbox_inches='tight')
+plt.show()
 
 # <codecell>
 ### PSVRT
@@ -138,7 +130,8 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-plt.savefig('fig/ccn/psvrt_acc_by_d.svg', bbox_inches='tight')
+plt.savefig('fig/psvrt_acc_by_d.svg', bbox_inches='tight')
+plt.show()
 
 # <codecell>
 ### PENTOMINO
@@ -161,15 +154,6 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
-# <codecell>
-mdf = plot_df.melt(id_vars=['name', 'n_pieces', 'gamma0'], var_name='acc_type', value_name='acc')
-mdf
-
-gs = sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='line', marker='o')
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
-
-plt.savefig('fig/pentomino_acc.png')
 
 # <codecell>
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
@@ -200,7 +184,8 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/pentomino_acc_by_l.svg', bbox_inches='tight')
+g.figure.savefig('fig/pentomino_acc_by_l.svg', bbox_inches='tight')
+plt.show()
 
 # <codecell>
 ### PENTOMINO LARGE
@@ -257,7 +242,8 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-plt.savefig('fig/ccn/pentomino_acc_by_d.svg', bbox_inches='tight')
+plt.savefig('fig/pentomino_acc_by_d.svg', bbox_inches='tight')
+plt.show()
 
 # <codecell>
 # CIFAR-100
@@ -297,15 +283,6 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
 plot_df
 
 # <codecell>
-mdf = plot_df.melt(id_vars=['name', 'n_classes', 'gamma0', 'preprocess', 'actv'], var_name='acc_type', value_name='acc')
-
-gs = sns.relplot(mdf, x='n_classes', y='acc', col='acc_type', row='actv', row_order=layer_names, hue='gamma0', kind='line', marker='o', palette='rocket_r')
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
-   
-plt.savefig('fig/cifar100_vgg_samp.png')
-
-# <codecell>
 mdf = plot_df.copy()
 for actv in tqdm(layer_names):
     cdf = mdf[(mdf['actv'] == actv)]
@@ -328,7 +305,7 @@ for actv in tqdm(layer_names):
     sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
     g.set_title(actv)
-    plt.savefig(f'fig/ccn/cifar100_actv/{actv}.svg', bbox_inches='tight')
+    plt.savefig(f'fig/{actv}.svg', bbox_inches='tight')
     plt.show()
 
 # <codecell>
@@ -356,4 +333,5 @@ g.set_xscale('log', base=2)
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-plt.savefig('fig/ccn/cifar100_acc_by_l.svg')
+plt.savefig('fig/cifar100_acc_by_l.svg')
+plt.show()

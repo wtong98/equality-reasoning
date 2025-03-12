@@ -91,7 +91,8 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
+g.figure.savefig('fig/sd_by_l.svg', bbox_inches='tight')
+plt.show()
 
 # <codecell>
 mdf = plot_df.copy()
@@ -124,49 +125,9 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
+g.figure.savefig('fig/sd_by_d.svg', bbox_inches='tight')
+plt.show()
 
-# <codecell>
-mdf = adf[(adf['gamma0'] == 0)]
-g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
-
-g.figure.set_size_inches(4, 3.5)
-g.legend_.set_title('# symbols')
-
-g.set_xscale('log', base=2)
-
-g.set_xlabel('Input dimension ($d$)')
-g.set_ylabel('Test accuracy')
-g.set_title(r'$\gamma = 1$')
-
-g.set_ylim((0.45, 1.02))
-g.axhline(y=0.5, color='gray', linestyle='dashed')
-
-g.figure.tight_layout()
-
-sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_rich_dim.svg', bbox_inches='tight')
-
-# <codecell>
-mdf = adf[(adf['gamma0'] == -4) & (adf['n_width'] == 1024)]
-g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
-
-g.set_ylim((0.45, 1.02))
-
-g.figure.set_size_inches(4, 3.5)
-g.legend_.set_title('# symbols')
-
-g.set_xscale('log', base=2)
-
-g.set_xlabel('Input dimension (d)')
-g.set_ylabel('Test accuracy')
-g.set_title(r'$\gamma_0 \approx 0$')
-
-g.axhline(y=0.5, color='gray', linestyle='dashed')
-
-g.figure.tight_layout()
-sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_lazy_dim.svg', bbox_inches='tight')
 
 # <codecell>
 ### LAZY VAR SYMBOLS
@@ -211,7 +172,8 @@ g.plot(xs, 20 - 2 * xs + 7, color='black', linestyle='dashed')
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
 
-g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
+g.figure.savefig('fig/lazy_ndim_v_nsym.svg')
+plt.show()
 
 # <codecell>
 mdf = plot_df.copy()
@@ -234,7 +196,8 @@ g.plot(xs, 16.5 - 0 * xs, color='black', linestyle='dashed')
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
 
-g.figure.savefig('fig/ccn/rich_ndim_v_nsym.svg')
+g.figure.savefig('fig/rich_ndim_v_nsym.svg')
+plt.show()
 
 # <codecell>
 ### LAZY VAR WIDTH
@@ -257,65 +220,6 @@ def extract_plot_vals(row):
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
-
-# <codecell>
-mdf = plot_df.copy()
-mdf = mdf[
-    (mdf['n_symbols'] == 128)
-  & (mdf['gamma0'] == -5)
-    ]
- 
-mdf = mdf[['n_width', 'n_dims', 'acc_best']]
-mdf = mdf.groupby(['n_width', 'n_dims'], as_index=False).mean()
-mdf = mdf.pivot(index='n_width', columns='n_dims', values='acc_best')
-
-g = sns.heatmap(mdf)
-xs = 2**np.linspace(-8, 8)
-
-# <codecell>
-### PHASE PORTRAIT
-df = collate_dfs('remote/15_sd_clean/phase', concat=True)
-df
-
-# <codecell>
-def extract_plot_vals(row):
-    return pd.Series([
-        row['name'],
-        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -10,
-        row['train_task'].n_symbols,
-        row['train_task'].n_dims,
-        row['config']['n_hidden'],
-        row['info']['acc_seen'].item(),
-        row['info']['acc_unseen'].item(),
-        row['info']['acc_best']
-    ], index=['name', 'gamma0', 'n_symbols', 'n_dims', 'n_width', 'acc_seen', 'acc_unseen', 'acc_best'])
-
-plot_df = df.apply(extract_plot_vals, axis=1) \
-            .reset_index(drop=True)
-plot_df
-
-# <codecell>
-acc_key = 'acc_best'
-acc_cutoff = 0.9
-
-mdf = plot_df.copy().drop('name', axis='columns')
-mdf = mdf[mdf['n_symbols'] == 64].drop('n_symbols', axis='columns')
-mdf['gamma0'] = np.round(mdf['gamma0'], decimals=2)
-mdf
-
-mdf = mdf.groupby(['gamma0', 'n_width', 'n_dims'], as_index=False).mean()
-diff = np.array(mdf[mdf['n_dims'] == 16][acc_key]) - np.array(mdf[mdf['n_dims'] == 512][acc_key])
-
-adf = mdf[mdf['n_dims'] == 16].drop('n_dims', axis='columns')
-adf['diff'] = diff
-adf.loc[adf[acc_key] < acc_cutoff, 'diff'] = np.inf
-
-adf = adf.pivot(index='n_width', columns='gamma0', values='diff')
-adf = adf.iloc[::-1]
-
-cmap = mpl.colormaps.get_cmap('BrBG')
-cmap.set_bad('k')
-sns.heatmap(adf, cmap=cmap, vmin=-0.5, vmax=0.5)
 
 
 # <codecell>
@@ -388,18 +292,8 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
     g.figure.tight_layout()
     sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
-    plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
+    plt.savefig(f'fig/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
     plt.show()
-
-# <codecell>
-mdf = pd.concat((plot_df, df_bayes))
-
-gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='name', col='sig2', row='n_dims', kind='line', marker='o')
-
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
-
-plt.savefig('fig/noise_sweep_diff_sig_best_sample.png')
 
 
 # <codecell>
@@ -464,5 +358,6 @@ g.set_ylabel('Test accuracy')
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
+g.figure.savefig('fig/rich.svg', bbox_inches='tight')
+plt.show()
 
