@@ -1,7 +1,9 @@
-flax
 jax
+flax
+optax
 matplotlib
 numpy
+scipy
 pandas
 seaborn
 tqdm
