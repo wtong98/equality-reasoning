@@ -145,7 +145,7 @@ n_hidden = 1024
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 10
+lr = gamma0**2 * 10
 
 n_patches = 2
 

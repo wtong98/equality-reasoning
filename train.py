@@ -1,6 +1,4 @@
-"""
-Training utilities
-"""
+"""Training utilities"""
 
 from dataclasses import dataclass, field
 from functools import partial
@@ -11,7 +9,6 @@ from flax import struct, traverse_util
 from flax.training import train_state
 import jax
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
 import numpy as np
 import optax
 from tqdm import tqdm
@@ -65,7 +62,6 @@ def create_train_state(rng, model, dummy_input, gamma=None, lr=1e-4, optim=optax
         params=params,
         tx=tx_with_freeze,
         metrics=Metrics.empty()
-        # init_params=params
     )
 
 def parse_loss_name(loss):
@@ -88,11 +84,6 @@ def train_step(state, batch, loss='bce'):
 
     def loss_fn(params):
         logits = state.apply_fn({'params': params}, x)
-
-        # if gamma is not None:
-        #     logits_init = state.apply_fn({'params': state.init_params}, x)
-        #     logits = (1 / gamma) * (logits - logits_init)
-
         train_loss = loss_func(logits, labels)
 
         if loss == 'bce' and len(labels.shape) > 1:
@@ -204,11 +195,6 @@ class Case:
     def run(self):
         self.state, self.hist = train(self.config, data_iter=self.train_task, test_iter=self.test_task, **self.train_args)
     
-    def get_flops(self):
-        train_args = self.train_args
-        loss = train_args.get('loss', None)
-        return get_flops(train_step, self.state, next(self.train_task), loss=loss)
-    
     def eval(self, task, key_name='eval_acc'):
         xs, ys = next(task)
         logits = self.state.apply_fn({'params': self.state.params}, xs)
@@ -247,14 +233,3 @@ def eval_cases(all_cases, eval_task, key_name='eval_acc', use_mse=False, ignore_
             else:
                 raise e
 
-
-# TODO: fix cost_analysis for FLOPs
-def get_flops(fn, *args, **kwargs):
-    """Borrowed from flax.nn.tabulate"""
-    e = fn.lower(*args, **kwargs).compile()
-    cost = e.cost_analysis()
-    if cost is None:
-        print('warn: unable to estimate flops')
-        return 0
-    flops = int(cost['flops']) if 'flops' in cost else -1
-    return flops

@@ -1,6 +1,5 @@
 """Same-different tasks"""
 
-# <codecell>
 from collections import defaultdict
 import numpy as np
 from scipy.ndimage import gaussian_filter
@@ -27,24 +26,6 @@ def batch_choice(a, n_elem, batch_size, rng=None):
     idxs = rng.permuted(idxs, axis=1)
     idxs = idxs[:,:n_elem]
     return idxs
-
-# v_choice = jax.vmap(lambda k, a, s: jax.random.choice(k, a, shape=s, replace=False), in_axes=[0, 0, None])
-
-# @functools.partial(jax.jit, static_argnums=2)
-# def fast_batch_choice(a, n_elem, batch_size, seed=0):
-#     key = jax.random.PRNGKey(seed)
-#     v_keys = jax.random.split(key, batch_size)
-
-#     idxs = jnp.tile(a, (batch_size, 1))
-#     # return jax.random.choice(key, a[0], replace=True, shape=(n_elem,))
-
-#     return v_choice(v_keys, idxs, (n_elem,))
-    
-
-# a = np.arange(10_000)
-# %timeit batch_choice(a, 2, 3)
-# %timeit fast_batch_choice(a, 2, 3, seed=np.random.randint(0, 10000))
-# jax.random.choice(jax.random.PRNGKey(0), a, shape=(2,), replace=False)
 
 
 def gen_patches(patch_size, n_examples=100, rng=None):
@@ -132,14 +113,6 @@ class SameDifferentPsvrt:
     def __iter__(self):
         return self
 
-# test_set = gen_patches(4, n_examples=2)
-# test_task = SameDifferentPsvrt(patch_size=4, n_patches=3, exc_set=test_set, batch_size=128)
-# xs, ys = next(test_task)
-# xs.shape
-
-# import matplotlib.pyplot as plt
-# plt.imshow(xs[0])
-
 
 class SameDifferentPentomino:
     def __init__(self, ps=None, width=2, blur=0, random_blur=False, batch_size=128):
@@ -189,13 +162,6 @@ class SameDifferentPentomino:
     def __iter__(self):
         return self
 
-# task = SameDifferentPentomino(width=4, batch_size=2, ps=None, blur=0)
-# xs, ys = next(task)
-
-# import matplotlib.pyplot as plt
-# plt.imshow(xs[0])
-# print(ys)
-
 
 class SameDifferentCifar100:
     def __init__(self, ps, batch_size=128, **loader_kwargs):
@@ -236,20 +202,11 @@ class SameDifferentCifar100:
     def __iter__(self):
         return self
 
-# task = SameDifferentCifar100(ps=[1,2,3], batch_size=5)
 
-# xs, ys = next(task)
-# xs.shape
-
-# import matplotlib.pyplot as plt
-# plt.imshow(xs[0,0].reshape(32, 32, 3, order='F') + 0.5)
-
-
-# <codecell>
 class SameDifferent:
     def __init__(self, n_symbols=None, task='hard',
                  n_dims=2, noise=0, thresh=0, radius=1, n_patches=2,   # soft/hard params
-                 n_seen=None, sample_seen=True,               # token params
+                 n_seen=None, sample_seen=True,                        # token params
                  seed=None, reset_rng_for_data=True, batch_size=128) -> None:
 
         if task == 'token':
@@ -292,9 +249,6 @@ class SameDifferent:
 
     def _sample_soft(self):
         xs = self.rng.standard_normal((self.batch_size, 2, self.n_dims)) / np.sqrt(self.n_dims)
-        # norms = np.linalg.norm(xs, axis=-1, keepdims=True)
-        # xs = xs / norms * self.radius
-
         x0, x1 = xs[:,0], xs[:,1]
         ys = (np.einsum('bi,bi->b', x0, x1) > self.thresh).astype('float')
         return xs, ys.flatten()
@@ -338,6 +292,3 @@ class SameDifferent:
     def __iter__(self):
         return self
     
-# task = SameDifferent(4096, n_dims=128, batch_size=10, n_patches=2, noise=0.1)
-# xs, ys = next(task)
-# xs

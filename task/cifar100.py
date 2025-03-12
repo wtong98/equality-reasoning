@@ -1,6 +1,5 @@
-"""Prepare cifar100 task"""
+"""Cifar100 utilities"""
 
-# <codecell>
 import numpy as np
 from pathlib import Path
 import pickle
@@ -8,22 +7,9 @@ import pickle
 import sys
 sys.path.append('../')
 from common import *
-from model.cnn import CnnConfig
 
 import flaxmodels as fm
 
-# xs = jnp.zeros((10, 32, 32, 3))
-# model = fm.VGG16(pretrained='imagenet', normalize=False, include_head=False, output='activations')
-# params = model.init(jax.random.PRNGKey(0), jnp.zeros((10, 32, 32, 3)))
-# out = model.apply(params, xs)
-
-# jax.tree.map(np.shape, out)  # TODO: map to outputs
-
-# model = CnnConfig(cnn_widths=[32, 64, 128], headless=True).to_model()
-# params = model.init(jax.random.PRNGKey(0), np.zeros((10, 32, 32, 3)))['params']
-# jax.tree.map(np.shape, params)
-
-# <codecell>
 cache = {}
 
 def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3', sub_samp=1, normalize=True):
@@ -71,18 +57,9 @@ def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3', sub_samp=1, 
             print(f'info: using cache for layer={actv_layer}')
         else:
             all_data = all_data.reshape(-1, 32, 32, 3, order='F')
-            # model = CnnConfig(cnn_widths=[64, 64], headless=True).to_model()
-            # params = model.init(jax.random.PRNGKey(seed), all_data[[0]])['params']
 
             model = fm.VGG16(pretrained='imagenet', normalize=False, include_head=False, output='activations')
             params =model.init(jax.random.PRNGKey(0), all_data[[0]])
-            # params = {
-            #     'Conv_0': vgg_params['params']['conv1_1'],
-            #     'Conv_1': vgg_params['params']['conv1_2'],
-            # }
-
-            # with open(parent_path / 'cnn_params.pkl', 'rb') as fp:
-            #     params = pickle.load(fp)
 
             batches = []
             apply_fn = lambda b: model.apply(params, b, train=False)
@@ -105,25 +82,3 @@ def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3', sub_samp=1, 
         'names': label_names
     }
 
-# res = load_data()
-
-
-# # <codecell>
-# res['data'].shape
-
-# # <codecell>
-# import matplotlib.pyplot as plt
-
-# all_data = res['data']
-
-# ims = all_data.reshape(-1, 32, 32, 3, order='F')
-
-# plt.imshow(ims[6])
-
-
-# # %%
-
-# a = np.zeros((100, 32, 32))
-# np.split(a, 5)[0].shape
-
-# %%

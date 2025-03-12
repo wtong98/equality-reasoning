@@ -20,7 +20,6 @@ run_split = 12
 
 train_iters = 25_000
 n_vocab = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-# log10_gs = np.linspace(-5, 0, num=6)
 log10_gs = np.linspace(0, 2, num=6)
 n_dims = [16, 32, 64, 128, 256, 512, 1024]
 n_widths = [1024]

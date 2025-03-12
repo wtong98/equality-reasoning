@@ -1,14 +1,8 @@
-"""Visual same-different tasks"""
+"""Visual same-different plotting"""
 
 # <codecell>
-from pathlib import Path
-
-from flax import traverse_util
-import jax
-import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
-import optax
 import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
@@ -17,10 +11,6 @@ import sys
 sys.path.append('../')
 from common import *
 from train import *
-from model.mlp import MlpConfig
-from model.transformer import TransformerConfig
-from task.same_different import SameDifferentPentomino, SameDifferentPsvrt, gen_patches
-from task.pentomino import pieces
 
 set_theme()
 
@@ -53,14 +43,13 @@ gs = sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='l
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
 
-# plt.savefig('fig/psvrt_acc_sample.png')
+plt.savefig('fig/psvrt_acc_sample.png')
 
 # <codecell>
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
 mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 
 g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o')
-# sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
 
 g.figure.set_size_inches(3, 2.5)
 
@@ -127,8 +116,6 @@ g.set_ylim((0.45, 1.02))
 g.axhline(y=0.5, color='gray', linestyle='dashed')
 g.text(x=2, y=0.51, s='chance', color='gray', fontsize=10)
 
-# g.set_xscale('log', base=2)
-
 handles, labels = plt.gca().get_legend_handles_labels()
 order = np.arange(len(handles))[::-1]
 plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
@@ -182,14 +169,13 @@ gs = sns.relplot(mdf, x='n_pieces', y='acc', col='acc_type', hue='name', kind='l
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
 
-# plt.savefig('fig/pentomino_acc.png')
+plt.savefig('fig/pentomino_acc.png')
 
 # <codecell>
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
 mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 
 g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o')
-# sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
 
 handles, labels = plt.gca().get_legend_handles_labels()
 order = np.arange(len(handles))[::-1]
@@ -201,7 +187,6 @@ g.axhline(y=1, color='white', linestyle='dashed', alpha=0)
 g.text(x=13, y=0.51, s='chance', color='gray', fontsize=10)
 
 g.figure.set_size_inches(3, 2.5)
-# g.set_xscale('log', base=2)
 
 g.legend_.set_title('')
 
@@ -345,7 +330,6 @@ for actv in tqdm(layer_names):
     g.set_title(actv)
     plt.savefig(f'fig/ccn/cifar100_actv/{actv}.svg', bbox_inches='tight')
     plt.show()
-    # break
 
 # <codecell>
 mdf = plot_df.copy()
@@ -356,12 +340,7 @@ handles, labels = plt.gca().get_legend_handles_labels()
 order = np.arange(len(handles))[::-1]
 plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 
-# g.set_ylim((0.45, 1.02))
-# g.axhline(y=0.5, color='gray', linestyle='dashed')
-# g.axhline(y=1, color='white', linestyle='dashed', alpha=0)
-
 g.figure.set_size_inches(3, 2.7)
-# g.set_xscale('log', base=2)
 
 g.legend_.set_title('')
 

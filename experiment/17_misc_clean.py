@@ -28,7 +28,7 @@ n_hidden = 1024
 
 gamma0 = 1
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 10
+lr = gamma0**2 * 10
 
 n_patches = 2
 
@@ -69,7 +69,6 @@ dots = w1.T @ w2 / (np.linalg.norm(w1, axis=0) * np.linalg.norm(w2, axis=0))
 cos_dists = np.diag(dots)
 
 # <codecell>
-# plt.rcParams.update({'font.size': 14})
 plt.gcf().set_size_inches(3.5, 2.5)
 
 plt.scatter(a[sort_idxs], cos_dists, alpha=0.5)
@@ -81,8 +80,6 @@ plt.gca().spines['right'].set_visible(False)
 
 plt.tight_layout()
 plt.savefig('fig/ccn/l2_weight_struct.svg')
-
-# note: test acc attained by lazy model is ~0.78
 
 # <codecell>
 ### PCA and Same Different recovers parallel / anti-parallel features
@@ -192,7 +189,7 @@ n_hidden = 512
 
 gamma0 = 1e-5
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 1
+lr = gamma0**2 * 1
 
 inc_set = gen_patches(patch_size=5, n_examples=n_points)
 train_task = SameDifferentPsvrt(patch_size=5, n_patches=2, inc_set=inc_set)
@@ -218,7 +215,7 @@ state, hist = train(config,
                     gamma=gamma,
                     seed=None)
 
-# note: attained lazy attained test accuracy around 0.85
+
 # <codecell>
 W = state.params['Dense_0']['kernel']
 a = state.params['Dense_1']['kernel'].flatten()
@@ -258,7 +255,7 @@ n_hidden = 512
 
 gamma0 = 1e-5
 gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 10
+lr = gamma0**2 * 10
 
 train_task = SameDifferentPentomino(ps=np.arange(n_points), blur=0.5, random_blur=True)
 test_task = SameDifferentPentomino(ps=[16, 17], blur=0, random_blur=False)
@@ -283,7 +280,7 @@ state, hist = train(config,
                     gamma=gamma,
                     seed=None)
 
-# attains test acc near chance
+
 # %%
 W = state.params['Dense_0']['kernel']
 a = state.params['Dense_1']['kernel'].flatten()

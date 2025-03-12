@@ -3,10 +3,7 @@
 from pathlib import Path
 import shutil
 
-import jax
-import jax.numpy as jnp
 import numpy as np
-import optax
 import pandas as pd
 from scipy.special import logsumexp
 import seaborn as sns
@@ -29,26 +26,6 @@ def new_seed():
 
 def t(xs):
     return np.swapaxes(xs, -2, -1)
-
-
-class Finite:
-    def __init__(self, task, data_size, seed=None) -> None:
-        self.task = task
-        self.data_size = data_size
-        self.batch_size = self.task.batch_size
-        self.task.batch_size = data_size   # dirty trick (we're all adults here)
-
-        self.data = next(self.task)
-        del self.task                      # task is consumed
-
-        self.rng = np.random.default_rng(seed)
-    
-    def __next__(self):
-        idxs = self.rng.choice(self.data_size, self.batch_size, replace=True)
-        return self.data[0][idxs], self.data[1][idxs]
-
-    def __iter__(self):
-        return self
 
 
 def split_cases(all_cases, run_split):
@@ -93,62 +70,6 @@ def collate_dfs(df_dir, show_progress=False, concat=True):
         dfs = pd.concat(dfs)
 
     return dfs
-
-
-def uninterleave(interl_xs):
-    xs = interl_xs[:,0::2]
-    ys = interl_xs[:,1::2,[0]]
-    xs, x_q = xs[:,:-1], xs[:,[-1]]
-    return xs, ys, x_q
-
-
-def unpack(pack_xs):
-    xs = pack_xs[:,:-1,:-1]
-    ys = pack_xs[:,:-1,[-1]]
-    x_q = pack_xs[:,[-1],:-1]
-    return xs, ys, x_q
-
-
-def estimate_dmmse(task, xs, ys, x_q, sig2=0.05):
-    '''
-    xs: N x P x D
-    ys: N x P x 1
-    x_q: N x 1 x D
-    ws: F x D
-    '''
-    ws = task.ws
-    
-    weights = np.exp(-(1 / (2 * sig2)) * np.sum((ys - xs @ ws.T)**2, axis=1))  # N x F
-    probs = weights / (np.sum(weights, axis=1, keepdims=True) + 1e-32)
-    w_dmmse = np.expand_dims(probs, axis=-1) * ws  # N x F x D
-    w_dmmse = np.sum(w_dmmse, axis=1, keepdims=True)  # N x 1 x D
-    return (x_q @ t(w_dmmse)).squeeze()
-
-
-def estimate_ridge(task, xs, ys, x_q, sig2=0.05):
-    n_dims = xs.shape[-1]
-    w_ridge = np.linalg.pinv(t(xs) @ xs + n_dims * sig2 * np.identity(n_dims)) @ t(xs) @ ys
-    return (x_q @ w_ridge).squeeze()
-
-# NOTE: remove once added to optax upstream
-def scale_by_sign():
-    def init_fn(params):  # no access to init_empty_state
-        del params
-        return optax.EmptyState()
-
-    def update_fn(updates, state, params=None):
-        del params
-        updates = jax.tree.map(lambda g: jnp.sign(g), updates)
-        return updates, state
-    
-    return optax.GradientTransformation(init_fn, update_fn)
-
-
-def sign_sgd(learning_rate):
-    return optax.chain(
-        scale_by_sign(),
-        optax.scale_by_learning_rate(learning_rate)
-    )
 
 
 def log_gen_like_same(z1, z2, d, sig2):

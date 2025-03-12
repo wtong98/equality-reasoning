@@ -46,22 +46,6 @@ test_tasks = []
 for d, sig2, n_hidden, v in itertools.product(n_dims, sig2s, n_widths, n_vocab):
     noise = sig2 * noise_scale
     
-    # all_cases.extend([
-    #     Case(f'RF', 
-    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-    #         train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-    #         test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
-    #         info={'sig2': sig2}),
-
-    #     Case(f'Adam', 
-    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-    #         train_task=SameDifferent(n_symbols=v, n_dims=d, noise=noise),
-    #         test_task=SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=noise),
-    #         info={'sig2': sig2}),
-    # ])
-
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
         gamma = gamma0 * np.sqrt(n_hidden)

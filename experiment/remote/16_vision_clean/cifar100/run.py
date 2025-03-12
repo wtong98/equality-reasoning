@@ -78,22 +78,6 @@ for prep, actv, n_train in itertools.product(preprocess, layer_names, n_trains):
     train_ps = ps[:n_train]
     test_ps = ps[n_train:]
 
-    all_cases.extend([
-        # Case(f'MLP (Adam)', 
-        #     MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden),
-        #     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-        #     train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
-        #     test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
-        #     info={'n_classes': n_train, 'preprocess': prep}),
-
-        # Case(f'MLP (RF)', 
-        #     MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True),
-        #     train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'lr': 1e-3},
-        #     train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep),
-        #     test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep),
-        #     info={'n_classes': n_train, 'preprocess': prep}),
-    ])
-
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
         gamma = gamma0 * np.sqrt(n_hidden)

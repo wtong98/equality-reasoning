@@ -49,20 +49,6 @@ test_tasks = []
 for n_train, n_patch in itertools.product(n_trains, n_patches):
     train_set = gen_patches(patch_size, n_examples=n_train)
 
-    # all_cases.extend([
-    #     Case(f'MLP (Adam)', 
-    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
-    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-    #         train_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patch, inc_set=train_set),
-    #         test_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patch, batch_size=1024)),
-
-    #     Case(f'MLP (RF)', 
-    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
-    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-    #         train_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patch, inc_set=train_set),
-    #         test_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patch, batch_size=1024)),
-    # ])
-    
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
         gamma = gamma0 * np.sqrt(n_hidden)

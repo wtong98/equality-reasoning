@@ -1,13 +1,10 @@
-"""Simple SD task"""
+"""SD task plotting"""
 
 
 # <codecell>
-import jax
-import jax.numpy as jnp
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import optax
 import pandas as pd
 from scipy.stats import norm
 import seaborn as sns
@@ -18,25 +15,14 @@ import sys
 sys.path.append('../')
 from common import *
 from train import *
-from model.mlp import MlpConfig
-from task.same_different import SameDifferent 
 
 def pred_rich_acc(n_points, a_raw=1.5):
     a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
-    # pt = np.sqrt(2 * n_points) * np.sqrt(2 / (np.pi - 2)) * a
-    # pt = (n_points - 1) * np.sqrt(2 / (np.pi - 2)) * a
     pt = np.sqrt(2 * n_points * (1/2 * n_points - 0.5)) * np.sqrt(2 / (np.pi - 2)) * a
-    print(pt)
     neg_acc = norm.cdf(pt)
     return (neg_acc + 1) / 2
 
 set_theme()
-
-# sns.set_theme(style='ticks', font_scale=1.25, rc={
-#     'axes.spines.right': False,
-#     'axes.spines.top': False,
-#     'figure.figsize': (5.5, 4)
-# })
 
 # <codecell>
 df = collate_dfs('remote/15_sd_clean/data_div', concat=True)
@@ -70,7 +56,6 @@ mdf2 = adf[~adf['name'].str.contains('gamma')]
 
 g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', alpha=0.7)
 g.figure.set_size_inches((3.5, 2.7))
-# sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
 
 xs = np.unique(mdf['n_symbols'])
 acc_est = pred_rich_acc(xs, a_raw=1.5)
@@ -97,7 +82,6 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     elif text != 'Theory':
-        # t.set_text('$\gamma$ = $10^{%s}$' % text)
         t.set_text(f'$\gamma = {np.round(10**float(text), decimals=2):.2f}$')
 
 g.set_xlabel('# symbols ($L$)')
@@ -143,9 +127,6 @@ sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
 
 # <codecell>
-# mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
-adf = plot_df[plot_df['n_symbols'] >= 0] # <-- control appropriately
-
 mdf = adf[(adf['gamma0'] == 0)]
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
@@ -168,7 +149,6 @@ g.figure.savefig('fig/ccn/sd_rich_dim.svg', bbox_inches='tight')
 
 # <codecell>
 mdf = adf[(adf['gamma0'] == -4) & (adf['n_width'] == 1024)]
-# mdf = plot_df[plot_df['name'] == 'RF']
 g = sns.lineplot(mdf, x='n_dims', y='acc_unseen', hue='n_symbols', marker='o', hue_norm=mpl.colors.LogNorm(), legend='full')
 
 g.set_ylim((0.45, 1.02))
@@ -291,10 +271,6 @@ mdf = mdf.pivot(index='n_width', columns='n_dims', values='acc_best')
 
 g = sns.heatmap(mdf)
 xs = 2**np.linspace(-8, 8)
-# g.plot(xs, xs + np.log(xs))
-# g.plot(xs, xs)
-
-# g.figure.savefig('fig/lazy_sweep_ndim_v_nhid_sample.png')
 
 # <codecell>
 ### PHASE PORTRAIT
@@ -341,7 +317,6 @@ cmap = mpl.colormaps.get_cmap('BrBG')
 cmap.set_bad('k')
 sns.heatmap(adf, cmap=cmap, vmin=-0.5, vmax=0.5)
 
-# plt.savefig('fig/phase_sample.png')
 
 # <codecell>
 ### NOISE
@@ -373,74 +348,6 @@ df_bayes = collate_dfs('remote/15_sd_clean/bayes', concat=True)
 df_bayes
 
 # <codecell>
-### COMPUTE BAYESIAN SOLUTIONS
-ds = np.unique(plot_df['n_dims'])
-n_symbols = np.unique(plot_df['n_symbols'])
-sig2s = np.unique(plot_df['sig2'])
-noise_scale = 1
-
-n_iters = 3
-
-all_res = []
-
-for _, d, L, sig2 in tqdm(list(itertools.product(
-                                range(n_iters), 
-                                ds, 
-                                n_symbols, 
-                                sig2s))):
-
-    sig2_orig = sig2
-
-    sig2 = sig2 * noise_scale
-
-    task = SameDifferent(n_symbols=L, n_dims=d, noise=sig2)
-    test = SameDifferent(n_symbols=None, n_dims=d, batch_size=1024, noise=sig2)
-    sig2 = sig2 + 1e-10
-
-    xs, ys = next(test)
-
-    g_preds = []
-    g_logits = []
-    m_preds = []
-    m_logits = []
-
-    for x in xs:
-        z1, z2 = x
-        g1 = log_gen_like_same(z1, z2, d, sig2)
-        g2 = log_gen_like_diff(z1, z2, d, sig2)
-        g_preds.append(1 if g1 > g2 else 0)
-        g_logits.append(g1 - g2)
-
-        m1 = log_mem_like_same(z1, z2, d, sig2, task.symbols)
-        m2 = log_mem_like_diff(z1, z2, d, sig2, task.symbols)
-        m_preds.append(1 if m1 > m2 else 0)
-        m_logits.append(m1 - m2)
-
-    all_res.extend([{
-        'name': 'Bayes Gen',
-        'n_symbols': L,
-        'n_dims': d,
-        'sig2': sig2_orig,
-        'acc_unseen': np.mean(g_preds == ys),
-        'loss_best': optax.sigmoid_binary_cross_entropy(np.array(g_logits), ys).mean().item()
-    }, {
-        'name': 'Bayes Mem',
-        'n_symbols': L,
-        'n_dims': d,
-        'sig2': sig2_orig,
-        'acc_unseen': np.mean(m_preds == ys),
-        'loss_best': optax.sigmoid_binary_cross_entropy(np.array(m_logits), ys).mean().item()
-    }])
-
-df_bayes = pd.DataFrame(all_res)
-df_bayes
-
-# <codecell>
-gs = sns.relplot(df_bayes, x='n_symbols', y='acc_unseen', hue='name', col='sig2', row='n_dims', kind='line', marker='o')
-for g in gs.axes.ravel():
-    g.set_xscale('log', base=2)
-
-# <codecell>
 mdf = plot_df.copy()
 
 mdf = mdf[(mdf['n_width'] == 1024)]
@@ -455,7 +362,6 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
     sns.lineplot(bdf, x='n_symbols', y='acc_unseen', hue='name', ax=g, linestyle='dashed', errorbar=('ci', False), palette=['red', 'magenta'])
 
     g.set_ylim((0.45, 1.02))
-    # g.axhline(y=0.5, color='gray', linestyle='dashed')
     g.axhline(y=1, color='white', linestyle='dashed', alpha=0)
 
     g.set_xscale('log', base=2)
@@ -488,13 +394,10 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
 # <codecell>
 mdf = pd.concat((plot_df, df_bayes))
 
-# mdf = mdf[mdf['sig2'] > 0.05]
-# gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='gamma0', col='sig2', row='n_dims', kind='line', marker='o', palette='rocket_r')
 gs = sns.relplot(mdf, x='n_symbols', y='acc_unseen', hue='name', col='sig2', row='n_dims', kind='line', marker='o')
 
 for g in gs.axes.ravel():
     g.set_xscale('log', base=2)
-    # g.set_yscale('log')
 
 plt.savefig('fig/noise_sweep_diff_sig_best_sample.png')
 
@@ -531,7 +434,6 @@ mdf2 = adf[~adf['name'].str.contains('gamma')]
 
 g = sns.lineplot(mdf, x='n_symbols', y='acc_best', hue='gamma0', marker='o', alpha=0.7)
 g.figure.set_size_inches((3, 2.4))
-# sns.lineplot(mdf2, x='n_symbols', y='acc_best', hue='name', marker='o', alpha=1, ax=g, palette=['C0', 'C9'], hue_order=['Adam', 'RF'])
 
 xs = np.unique(mdf['n_symbols'])
 acc_est = pred_rich_acc(xs, a_raw=1.5)
@@ -540,9 +442,6 @@ acc_est[0] = 0.75
 tdf = pd.DataFrame({'n_symbols': xs, 'acc_best': acc_est})
 tdf['name'] = 'Theory'
 sns.lineplot(tdf, x='n_symbols', y='acc_best', hue='name', ax=g, palette=['red'], linestyle='dashed')
-
-# g.set_ylim((0.45, 1.02))
-# g.axhline(y=0.5, color='gray', linestyle='dashed')
 
 g.legend_.set_title('')
 
@@ -561,28 +460,9 @@ for t in g.legend_.get_texts():
 
 g.set_xlabel('# symbols ($L$)')
 g.set_ylabel('Test accuracy')
-# g.set_xscale('log', base=2)
 
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
 
-
-# <codecell>
-n_iters = 1000
-n_dims = 10000
-a = np.random.randn(n_iters, n_dims)
-b = np.random.randn(n_iters, n_dims)
-c = np.random.randn(n_iters, n_dims)
-d = np.random.randn(n_iters, n_dims)
-e = np.random.randn(n_iters, n_dims)
-f = np.random.randn(n_iters, n_dims)
-g = np.random.randn(n_iters, n_dims)
-h = np.random.randn(n_iters, n_dims)
-
-z1 = np.diag(a @ (b + c).T)
-z2 = np.diag(d @ e.T + f @ g.T)
-
-plt.hist(z1, bins=50, density=True, alpha=0.5)
-plt.hist(z2, bins=50, density=True, alpha=0.5)
