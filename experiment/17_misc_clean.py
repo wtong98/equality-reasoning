@@ -228,12 +228,12 @@ sort_idxs = np.argsort(a)
 W_sort = W[:,sort_idxs]
 idx = 0
 
-plt.imshow(W_sort[:,idx].reshape(10, 10), vmin=-0.1, vmax=0.1, cmap='viridis')
+plt.imshow(W_sort[:,idx].reshape(10, 10), vmin=-0.1, vmax=0.1,  cmap='bwr')
 plt.axhline(y=4.5, color='white')
 plt.axvline(x=4.5, color='white')
 plt.colorbar()
 
-plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
+plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$', fontsize=20)
 plt.axis('off')
 
 plt.savefig('fig/ccn/concept/psvrt_lazy_neg.svg')
@@ -256,7 +256,8 @@ plt.savefig('fig/ccn/concept/psvrt_lazy_pos.svg')
 n_points = 16
 n_hidden = 512
 
-gamma0 = 1e-5
+gamma0 = 1
+# gamma0 = 1e-5
 gamma = gamma0 * np.sqrt(n_hidden)
 lr = gamma0 * 10
 
@@ -291,30 +292,30 @@ a = state.params['Dense_1']['kernel'].flatten()
 sort_idxs = np.argsort(a)
 
 W_sort = W[:,sort_idxs]
-idx = 0
+idx = 6
 
-plt.imshow(W_sort[:,idx].reshape(14, 14), vmin=-0.1, vmax=0.1, cmap='viridis')
+plt.imshow(W_sort[:,idx].reshape(14, 14), vmin=-4, vmax=4, cmap='bwr')
 plt.axhline(y=6.5, color='white')
 plt.axvline(x=6.5, color='white')
 plt.colorbar()
 
-plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
+plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$', fontsize=20)
 plt.axis('off')
 
-plt.savefig('fig/ccn/concept/pentomino_lazy_neg.svg')
+plt.savefig('fig/ccn/concept/pentomino_rich_neg.svg')
 
 # <codecell>
-idx = -1
+idx = -9
 
-plt.imshow(W_sort[:,idx].reshape(14, 14), vmin=-0.1, vmax=0.1, cmap='viridis')
+plt.imshow(W_sort[:,idx].reshape(14, 14), vmin=-1, vmax=1, cmap='bwr')
 plt.axhline(y=6.5, color='white')
 plt.axvline(x=6.5, color='white')
 plt.colorbar()
 
-plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
+plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$', fontsize=20)
 plt.axis('off')
 
-plt.savefig('fig/ccn/concept/pentomino_lazy_pos.svg')
+plt.savefig('fig/ccn/concept/pentomino_rich_pos.svg')
 
 # <codecell>
 ### CIFAR-100 CONCEPT

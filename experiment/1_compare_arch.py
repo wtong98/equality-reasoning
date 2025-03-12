@@ -228,12 +228,12 @@ all_norms = []
 for n_hidden in [16, 64, 256, 1024]:
     n_points = 8
     n_dims = 128
+    base_lr = 0.01
     # n_hidden = 512
 
-    gamma0 = 0.01
+    gamma0 = 1
     gamma = gamma0 * np.sqrt(n_hidden)
-    # lr = gamma**2 * 0.1
-    lr = gamma0**2 * 0.01
+    lr = gamma0**2 * base_lr
 
     train_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True)
     test_task = SameDifferent(n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
@@ -253,7 +253,7 @@ for n_hidden in [16, 64, 256, 1024]:
                         loss='bce',
                         gamma=gamma,
                         test_every=1000,
-                        train_iters=1, 
+                        train_iters=5, 
                         optim=optax.sgd,
                         lr=lr,
                         seed=None)

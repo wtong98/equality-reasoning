@@ -23,10 +23,9 @@ from task.same_different import SameDifferent
 
 def pred_rich_acc(n_points, a_raw=1.5):
     a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
-    # pt = np.sqrt(2 * n_points) * np.sqrt(2 / (np.pi - 2)) * a
-    # pt = (n_points - 1) * np.sqrt(2 / (np.pi - 2)) * a
-    pt = np.sqrt(2 * n_points * (1/2 * n_points - 0.5)) * np.sqrt(2 / (np.pi - 2)) * a
-    print(pt)
+    # pt = np.sqrt(2 * n_points * (1/2 * n_points - 0.5)) * np.sqrt(2 / (np.pi - 2)) * a
+    prefac = 2 / (13 * (np.pi - 2))
+    pt = np.sqrt(prefac * (n_points**2 - n_points))
     neg_acc = norm.cdf(pt)
     return (neg_acc + 1) / 2
 
@@ -566,7 +565,7 @@ g.set_ylabel('Test accuracy')
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
+# g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
 
 
 # <codecell>
@@ -586,3 +585,20 @@ z2 = np.diag(d @ e.T + f @ g.T)
 
 plt.hist(z1, bins=50, density=True, alpha=0.5)
 plt.hist(z2, bins=50, density=True, alpha=0.5)
+
+# <codecell>
+n_reps = 1000
+
+n_dims = 100
+
+xs = np.random.randn(n_reps, n_dims) / np.sqrt(n_dims)
+ys = np.random.randn(n_reps, n_dims) / np.sqrt(n_dims)
+
+u = np.abs(xs.sum(axis=-1) + ys.sum(axis=-1))
+v = np.abs(xs.sum(axis=-1) - ys.sum(axis=-1))
+
+rho = 10
+print(np.mean(rho * v - u > 0))
+print(2 * np.arctan(rho) / np.pi)
+
+# <codecell>
