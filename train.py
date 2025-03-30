@@ -154,7 +154,7 @@ def train(config, data_iter,
     hist = {
         'train': [],
         'test': [],
-        'params': []
+        'params': [state.params]
     }
 
     for step, batch in zip(range(train_iters), data_iter):

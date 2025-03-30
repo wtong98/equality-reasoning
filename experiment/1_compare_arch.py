@@ -225,18 +225,20 @@ np.trace(m[0])
 ### COORDINATE CHECKING
 all_norms = []
 
-for n_hidden in [16, 64, 256, 1024]:
+for n_dims in [16, 32, 64, 128, 256]:
     n_points = 8
-    n_dims = 128
-    base_lr = 0.01
-    # n_hidden = 512
+    # n_dims = 128
+    base_lr = 0.1
+    n_hidden = 256
 
-    gamma0 = 1
-    gamma = gamma0 * np.sqrt(n_hidden)
+    gamma0 = 1 * np.sqrt(n_dims)
+    # gamma = gamma0
+    gamma = gamma0
+    # gamma = gamma0 * np.sqrt(n_hidden)
     lr = gamma0**2 * base_lr
 
     train_task = SameDifferent(n_dims=n_dims, n_symbols=n_points, seed=None, reset_rng_for_data=True)
-    test_task = SameDifferent(n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=1024)
+    test_task = SameDifferent(n_dims=n_dims, n_symbols=None, seed=None, reset_rng_for_data=True, batch_size=128)
 
     config = MlpConfig(mup_scale=True,
                     n_out=1, 
@@ -253,10 +255,12 @@ for n_hidden in [16, 64, 256, 1024]:
                         loss='bce',
                         gamma=gamma,
                         test_every=1000,
-                        train_iters=5, 
+                        train_iters=5000, 
                         optim=optax.sgd,
                         lr=lr,
                         seed=None)
+
+    W_init = hist['params'][0]['Dense_0']['kernel']
 
     xs, _ = next(train_task)
     xs = xs.reshape(xs.shape[0], -1)
@@ -266,10 +270,13 @@ for n_hidden in [16, 64, 256, 1024]:
     W = state.params['Dense_0']['kernel']
     a = state.params['Dense_1']['kernel']
     
-    act = xs @ W
+    act = xs @ (W - W_init)
     norm = np.mean(np.linalg.norm(act, axis=1))
     all_norms.append(norm)
 
+
 # <codecell>
-plt.plot(all_norms)
+dims = np.sqrt(np.sqrt(np.array([16, 32, 64, 128, 256])))
+plt.plot(all_norms / dims, '--o')
+# plt.plot(all_norms, '--o')
 # %%
