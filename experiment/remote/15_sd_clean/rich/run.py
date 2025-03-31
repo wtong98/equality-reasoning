@@ -34,7 +34,7 @@ sig2 = 0
 
 # train_iters = 2500
 # n_vocab = [4]
-# n_dims = [2]
+# n_dims = [16, 32]
 # log10_gs = [0]
 # n_widths = [256]
 ### END TEST CONFIGS
@@ -61,7 +61,7 @@ for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_dims)
+        gamma = gamma0 * np.sqrt(d)
         lr = gamma * base_lr
 
         all_cases.append(

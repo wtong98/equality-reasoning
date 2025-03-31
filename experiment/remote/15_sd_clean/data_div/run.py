@@ -61,7 +61,7 @@ for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_dims)
+        gamma = gamma0 * np.sqrt(d)
         lr = gamma**2 * base_lr
 
         all_cases.append(
