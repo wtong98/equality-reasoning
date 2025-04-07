@@ -18,7 +18,7 @@ print('RUN ID', run_id)
 
 run_split = 12
 
-train_iters = 100_000
+train_iters = 50_000
 log10_gs = [-5, 0]
 
 n_vocab_rich = np.round(2**np.linspace(1, 10, 20)).astype(int)
@@ -28,7 +28,7 @@ n_vocab_lazy = np.round(2**np.linspace(4, 10, 20)).astype(int)
 n_dims_lazy = np.round(2**np.linspace(4, 10, 20)).astype(int)
 
 n_widths = [4096]
-base_lr = 10
+base_lr = 0.1
 
 n_layers = 1
 sig2 = 0
@@ -52,8 +52,8 @@ for log10_gamma0, n_dims, n_vocab in zip(log10_gs, [n_dims_lazy, n_dims_rich], [
         noise = sig2
 
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
-        lr = gamma0**2 * base_lr
+        gamma = gamma0 * np.sqrt(d)
+        lr = gamma**2 * base_lr
 
         all_cases.append(
             Case(rf'$\gamma=10^{ {log10_gamma0} }$',

@@ -106,7 +106,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
+# g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
 
 # <codecell>
 mdf = plot_df.copy()
@@ -139,7 +139,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
+# g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -163,7 +163,7 @@ g.axhline(y=0.5, color='gray', linestyle='dashed')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_rich_dim.svg', bbox_inches='tight')
+# g.figure.savefig('fig/ccn/sd_rich_dim.svg', bbox_inches='tight')
 
 # <codecell>
 mdf = adf[(adf['gamma0'] == -4) & (adf['n_width'] == 1024)]
@@ -185,7 +185,7 @@ g.axhline(y=0.5, color='gray', linestyle='dashed')
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-g.figure.savefig('fig/ccn/sd_lazy_dim.svg', bbox_inches='tight')
+# g.figure.savefig('fig/ccn/sd_lazy_dim.svg', bbox_inches='tight')
 
 # <codecell>
 ### LAZY VAR SYMBOLS
