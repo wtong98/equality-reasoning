@@ -65,7 +65,7 @@ class MLP(nn.Module):
                                kernel_init=mup_init,
                                name=name)(x)
                 # x = np.sqrt(self.config.n_hidden / x.shape[-1]) * x
-                # x = np.sqrt(1 / x.shape[-1]) * x
+                x = np.sqrt(1 / x.shape[-1]) * x
 
             else:
                 x = nn.Dense(self.config.n_hidden, 

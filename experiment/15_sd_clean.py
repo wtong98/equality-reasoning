@@ -225,12 +225,13 @@ g = sns.heatmap(mdf, vmin=0.5, vmax=1, square=False)
 g.figure.set_size_inches(3.5, 2.7)
 
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, 20 - 2 * xs + 7, color='black', linestyle='dashed')
+# g.plot(xs, 20 - 2 * xs + 7, color='black', linestyle='dashed')
+g.plot(xs, 10 - 1 * xs + 8, color='black', linestyle='dashed')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
 
-g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
+# g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
 
 # <codecell>
 mdf = plot_df.copy()

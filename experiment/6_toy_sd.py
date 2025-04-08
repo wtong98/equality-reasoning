@@ -425,20 +425,20 @@ plt.savefig('fig/noise_sweep_diff_sig_best_by_sig_gap.png')
 
 # <codecell>
 # NOTE: dimension dependence seems to enter when considering patch sizes > 2
-n_dims = 900
-n_points = 334
+n_dims = 92
+n_points = 74
 # n_points = np.round(0.5 * n_dims * np.log(n_dims)).astype(int)
 # n_points = n_dims
 # n_hidden = 892
-n_hidden = 1024
+n_hidden = 4096
 
 noise = 0
 
-gamma0 = 1e-5 * np.sqrt(n_dims)
+gamma0 = 1e-5
 # gamma0 = 1
 # gamma = gamma0 * np.sqrt(n_hidden)
 gamma = gamma0
-lr = gamma0**2 * 0.1
+lr = gamma0**2 * 0.1 * n_dims
 
 n_patches = 2
 
@@ -473,7 +473,7 @@ state, hist = train(config,
                     test_iter=iter(test_task), 
                     loss='bce',
                     test_every=1000,
-                    train_iters=5_000,
+                    train_iters=100_000,
                     # lr=1e-3,
                     # optim=sign_sgd,
                     optim=optax.sgd,
