@@ -54,7 +54,7 @@ for log10_gamma0, n_dims, n_vocab in zip(log10_gs, [n_dims_lazy, n_dims_rich], [
         gamma0 = 10**log10_gamma0
         # gamma = gamma0 * np.sqrt(d)
         gamma = gamma0
-        lr = gamma**2 * base_lr * n_dims
+        lr = gamma**2 * base_lr
 
         all_cases.append(
             Case(rf'$\gamma=10^{ {log10_gamma0} }$',
