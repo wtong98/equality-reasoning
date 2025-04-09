@@ -60,7 +60,7 @@ plot_df
 
 # <codecell>
 adf = plot_df[
-    (plot_df['n_dims'] == 512)
+    (plot_df['n_dims'] == 256)
     & (plot_df['n_width'] == 1024)
     ]
 
@@ -222,18 +222,18 @@ mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 mdf = mdf.iloc[::-1]
-g = sns.heatmap(mdf, vmin=0.5, vmax=1, square=False)
+g = sns.heatmap(mdf, vmin=0.6, vmax=1, square=False)
 g.figure.set_size_inches(3.5, 2.7)
 
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, 20 - 2 * xs + 5, color='black', linestyle='dashed')
+g.plot(xs, 20 - 2 * xs + 2.2, color='black', linestyle='dashed')
 # g.plot(xs, 10 - 1 * xs + 8, color='black', linestyle='dashed')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
 
 # g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
-g.figure.savefig('fig/ccn/lazy_tmp.png')
+# g.figure.savefig('fig/ccn/lazy_tmp.png')
 
 # <codecell>
 mdf = plot_df.copy()

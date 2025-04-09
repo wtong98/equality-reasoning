@@ -24,8 +24,8 @@ log10_gs = [-5, 0]
 n_vocab_rich = np.round(2**np.linspace(1, 10, 20)).astype(int)
 n_dims_rich = np.round(2**np.linspace(1, 10, 20)).astype(int)
 
-n_vocab_lazy = np.round(2**np.linspace(4, 10, 20)).astype(int)
-n_dims_lazy = np.round(2**np.linspace(4, 10, 20)).astype(int)
+n_vocab_lazy = np.round(2**np.linspace(7, 10, 20)).astype(int)
+n_dims_lazy = np.round(2**np.linspace(7, 10, 20)).astype(int)
 
 n_widths = [4096]
 base_lr = 0.1
@@ -52,7 +52,9 @@ for log10_gamma0, n_dims, n_vocab in zip(log10_gs, [n_dims_lazy, n_dims_rich], [
         noise = sig2
 
         gamma0 = 10**log10_gamma0
-        # gamma = gamma0 * np.sqrt(d)
+        if gamma0 > 1e-3:
+            gamma0 *= np.sqrt(d)
+        
         gamma = gamma0
         lr = gamma**2 * base_lr
 

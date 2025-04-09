@@ -28,7 +28,7 @@ n_hidden = 1024
 
 n_trains = [8, 16, 32, 64, 90]
 log10_gs = np.linspace(-5, 0, num=6)
-base_lr = 1
+base_lr = 0.1
 
 preprocess = [True]
 
@@ -95,14 +95,24 @@ for prep, actv, n_train in itertools.product(preprocess, layer_names, n_trains):
     ])
 
     for log10_gamma0 in log10_gs:
+        train_task = SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep, actv_layer=actv, batch_size=1)
+        xs, _ = next(train_task)
+        xs = xs.reshape(1, -1)
+
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
+
+        if log10_gamma0 > -5:
+            gamma0 *= np.sqrt(xs.shape[1])
+
+        gamma = gamma0
         lr = gamma0**2 * base_lr
+
+        train_task.batch_size = 128
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True, use_bias=False),
             train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce', 'optim': optax.sgd, 'lr': lr, 'gamma': gamma},
-            train_task=SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep, actv_layer=actv),
+            train_task=train_task,
             test_task=SameDifferentCifar100(ps=test_ps, preprocess_cnn=prep, actv_layer=actv),
             info={'log10_gamma0': log10_gamma0, 'n_classes': n_train, 'preprocess': prep, 'actv': actv})
         all_cases.append(c)
