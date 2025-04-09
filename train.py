@@ -57,7 +57,6 @@ def create_train_state(rng, model, dummy_input, gamma=None, lr=1e-4, optim=optax
         if gamma is not None:
             logits_init = model.apply({'params': params}, *args, **kwargs)
             logits = (1 / gamma) * (logits - logits_init)
-            # logits = (1 / gamma) * logits
 
         return logits
 

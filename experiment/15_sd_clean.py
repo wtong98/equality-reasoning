@@ -189,7 +189,8 @@ sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
 # <codecell>
 ### LAZY VAR SYMBOLS
-df = collate_dfs('remote/15_sd_clean/lazy_var_symbols', concat=True)
+# df = collate_dfs('remote/15_sd_clean/lazy_var_symbols', concat=True)
+df = collate_dfs('remote/15_sd_clean/lazy_test', concat=True)
 df
 
 # <codecell>
@@ -225,13 +226,14 @@ g = sns.heatmap(mdf, vmin=0.5, vmax=1, square=False)
 g.figure.set_size_inches(3.5, 2.7)
 
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, 20 - 2 * xs + 12, color='black', linestyle='dashed')
+g.plot(xs, 20 - 2 * xs + 5, color='black', linestyle='dashed')
 # g.plot(xs, 10 - 1 * xs + 8, color='black', linestyle='dashed')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
 
 # g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
+g.figure.savefig('fig/ccn/lazy_tmp.png')
 
 # <codecell>
 mdf = plot_df.copy()

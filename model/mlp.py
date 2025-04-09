@@ -64,10 +64,6 @@ class MLP(nn.Module):
                                use_bias=self.config.use_bias,
                                kernel_init=mup_init,
                                name=name)(x)
-                # x = np.sqrt(self.config.n_hidden / x.shape[-1]) * x
-                # x = np.sqrt(self.config.n_hidden) * x
-                # print('SHAPE', self.config.n_hidden / x.shape[-1])
-
             else:
                 x = nn.Dense(self.config.n_hidden, 
                             use_bias=self.config.use_bias,
