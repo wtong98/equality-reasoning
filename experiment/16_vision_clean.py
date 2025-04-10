@@ -65,8 +65,8 @@ g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o')
 g.figure.set_size_inches(3, 2.5)
 
 g.set_ylim((0.45, 1.02))
-g.axhline(y=0.5, xmin=0, xmax=0.75, color='gray', linestyle='dashed')
-g.text(x=2**9.5, y=0.49, s='chance', color='gray', fontsize=10)
+g.axhline(y=0.5, xmin=0, xmax=1, color='gray', linestyle='dashed')
+g.text(x=2**9.5, y=0.51, s='chance', color='gray', fontsize=10)
 
 g.set_xscale('log', base=2)
 
@@ -83,7 +83,11 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     else:
-        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+        val = int(float(text))
+        if val != -5:
+            t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+        else:
+            t.set_text(r'$\gamma \approx 0$')
 
 
 g.set_xlabel('# bit-patterns')
@@ -120,7 +124,7 @@ plot_df
 mdf = plot_df.copy()
 mdf = mdf[mdf['n_pieces'] == 1024]
 
-g = sns.lineplot(mdf, x='n_patches', y='acc_best', hue='gamma0', marker='o')
+g = sns.lineplot(mdf, x='n_patches', y='acc_unseen', hue='gamma0', marker='o')
 g.figure.set_size_inches(3.1, 2.5)
 
 g.set_ylim((0.45, 1.02))
@@ -142,7 +146,11 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     else:
-        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+        val = int(float(text))
+        if val != -5:
+            t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+        else:
+            t.set_text(r'$\gamma \approx 0$')
 
 
 g.set_xlabel('# patches')
@@ -207,7 +215,11 @@ g.legend_.set_title('')
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+    val = int(float(text))
+    if val != -5:
+        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+    else:
+        t.set_text(r'$\gamma \approx 0$')
 
 g.set_xlabel('# shapes')
 g.set_ylabel('Test accuracy')
@@ -259,7 +271,11 @@ g.legend_.set_title('')
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+    val = int(float(text))
+    if val != -5:
+        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+    else:
+        t.set_text(r'$\gamma \approx 0$')
 
 
 ticks = np.unique(mdf['width'])[::2]

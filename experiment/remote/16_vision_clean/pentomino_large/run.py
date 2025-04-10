@@ -23,7 +23,7 @@ run_split = 9
 train_iters = 100_000
 n_hidden = 512
 
-n_trains = [12, 14, 16]
+n_trains = [14, 16]
 n_widths = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 log10_gs = np.linspace(-5, 0, num=6)
 base_lr = 0.5

@@ -96,8 +96,11 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     elif text != 'Theory':
-        # t.set_text('$\gamma$ = $10^{%s}$' % text)
-        t.set_text(f'$\gamma = {np.round(10**float(text), decimals=2):.2f}$')
+        val = np.round(10**float(text), decimals=2)
+        if val != 0:
+            t.set_text(f'$\gamma = {val:.2f}$')
+        else:
+            t.set_text(r'$\gamma \approx 0.00$')
 
 g.set_xlabel('# symbols ($L$)')
 g.set_ylabel('Test accuracy')
@@ -131,7 +134,11 @@ plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text(f'$\gamma = {np.round(10**float(text), decimals=2):.2f}$')
+    val = np.round(10**float(text), decimals=2)
+    if val != 0:
+        t.set_text(f'$\gamma = {val:.2f}$')
+    else:
+        t.set_text(r'$\gamma \approx 0.00$')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('Test accuracy')
@@ -222,7 +229,7 @@ mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 mdf = mdf.iloc[::-1]
-g = sns.heatmap(mdf, vmin=0.6, vmax=1, square=False)
+g = sns.heatmap(mdf, vmax=1, square=False)
 g.figure.set_size_inches(3.5, 2.7)
 
 xs = 2**np.linspace(-5, 8)
@@ -480,13 +487,17 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
         elif 'Mem' in text:
             t.set_text('Bayes mem')
         elif text != 'Theory':
-            t.set_text('$\gamma$ = $10^{%s}$' % text)
+            if float(text[-1]) != 5:
+                t.set_text('$\gamma$ = $10^{%s}$' % text)
+            else:
+                t.set_text(r'$\gamma \approx 0$')
 
     g.figure.set_size_inches(3, 2.6)
     g.figure.tight_layout()
     sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
-    plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
+    # plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
+    break
     plt.show()
 
 # <codecell>
