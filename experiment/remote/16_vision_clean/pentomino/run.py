@@ -25,7 +25,7 @@ n_hidden = 512
 
 n_trains = [2, 4, 6, 8, 10, 12, 14, 16]
 log10_gs = np.linspace(-5, 0, num=6)
-base_lr = 0.1
+base_lr = 0.5
 blur = 0.5
 test_blur = 0
 random_blur = True
@@ -65,8 +65,8 @@ for n_train in n_trains:
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        if log10_gamma0 > -5:
-            gamma0 *= 14  # width of pentomino image
+        # if log10_gamma0 > -5:
+        #     gamma0 *= 14  # width of pentomino image
 
         gamma = gamma0
         lr = gamma0**2 * base_lr

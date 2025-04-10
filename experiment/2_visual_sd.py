@@ -166,7 +166,7 @@ plt.savefig('fig/visual_sd_width_success_thresh.png')
 # <codecell>
 n_hidden = 512
 
-width = 2
+width = 8
 ps = np.random.permutation(np.arange(18))
 n_train = 16
 
@@ -176,10 +176,23 @@ ps_test = ps[n_train:]
 train_task = SameDifferentPentomino(ps=ps_train, width=width, batch_size=128, blur=0.5, random_blur=True)
 test_task = SameDifferentPentomino(ps=ps_test, width=width, batch_size=128, blur=0)
 
+# patch_size = 5
+# n_patches = 8
 
+# n_train = 512
+# train_set = gen_patches(patch_size, n_examples=n_train)
+
+# train_task = SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, inc_set=train_set)
+# test_task = SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches)
+
+
+# gamma0 = 1 * 7 * width
+# gamma = gamma0 * 7 * width
 gamma0 = 1
-gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 1
+gamma = gamma0
+# gamma0 = 1 * patch_size * n_patches
+# gamma = gamma0 * patch_size * n_patches
+lr = gamma0**2 * 0.5
 
 config = MlpConfig(n_out=1, 
                    vocab_size=None, 
