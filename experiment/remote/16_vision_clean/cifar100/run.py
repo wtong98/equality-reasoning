@@ -28,7 +28,7 @@ n_hidden = 1024
 
 n_trains = [8, 16, 32, 64, 90]
 log10_gs = np.linspace(-5, 0, num=6)
-base_lr = 0.1
+base_lr = 0.01
 
 preprocess = [True]
 
@@ -102,9 +102,9 @@ for prep, actv, n_train in itertools.product(preprocess, layer_names, n_trains):
         gamma0 = 10**log10_gamma0
 
         if log10_gamma0 > -5:
-            gamma0 *= np.sqrt(xs.shape[1])
+            gamma0 *= np.sqrt(xs.shape[-1])
 
-        gamma = gamma0
+        gamma = gamma0 * np.sqrt(xs.shape[-1])   # normalization on input
         lr = gamma0**2 * base_lr
 
         train_task.batch_size = 128

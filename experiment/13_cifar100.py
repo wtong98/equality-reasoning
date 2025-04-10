@@ -81,14 +81,18 @@ test_pieces = np.arange(64, 100)
 
 preprocess = True
 
-train_task = SameDifferentCifar100(ps=train_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, batch_size=128)
-test_task = SameDifferentCifar100(ps=test_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, batch_size=128)
+key = new_seed()
+train_task = SameDifferentCifar100(ps=train_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, sub_samp_key=key, batch_size=128)
+test_task = SameDifferentCifar100(ps=test_pieces, preprocess_cnn=preprocess, actv_layer='relu4_1', sub_samp=0.7, sub_samp_key=key, batch_size=128)
 
 # <codecell>
-gamma0 = 0.1
-gamma = gamma0
-gamma = np.sqrt(n_hidden) * gamma0
-lr = gamma0**2 * 1
+xs, _ = next(train_task)
+xs.shape
+n_dims = xs.reshape(xs.shape[0], -1).shape[-1]
+
+gamma0 = 0.1 * np.sqrt(n_dims)
+gamma = gamma0 * np.sqrt(n_dims)
+lr = gamma0**2 * 0.01
 
 config = MlpConfig(n_out=1, 
                    mup_scale=True,
