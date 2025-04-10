@@ -21,9 +21,11 @@ run_split = 12
 train_iters = 25_000
 n_vocab = 2**np.arange(1, 14)
 log10_gs = np.linspace(-5, 0, num=11)
-n_dims = [64, 128, 256]
+# n_dims = [64, 128, 256]
+n_dims = [64]
 base_lr = 0.1
-sig2s = [0, 0.1, 1, 2, 4]
+# sig2s = [0, 0.1, 1, 2, 4]
+sig2s = [0, 1, 2, 4]
 noise_scale = 1
 
 n_layers = 1

@@ -59,7 +59,7 @@ for g in gs.axes.ravel():
 mdf = plot_df[plot_df['name'].str.contains('gamma')]
 mdf2 = plot_df[~plot_df['name'].str.contains('gamma')]
 
-g = sns.lineplot(mdf, x='n_pieces', y='acc_seen', hue='gamma0', marker='o')
+g = sns.lineplot(mdf, x='n_pieces', y='acc_best', hue='gamma0', marker='o')
 # sns.lineplot(mdf2, x='n_pieces', y='acc_best', hue='name', marker='o', alpha=0.7, ax=g, palette=['C0', 'C9'])
 
 g.figure.set_size_inches(3, 2.5)
@@ -120,7 +120,7 @@ plot_df
 mdf = plot_df.copy()
 mdf = mdf[mdf['n_pieces'] == 1024]
 
-g = sns.lineplot(mdf, x='n_patches', y='acc_unseen', hue='gamma0', marker='o')
+g = sns.lineplot(mdf, x='n_patches', y='acc_best', hue='gamma0', marker='o')
 g.figure.set_size_inches(3.1, 2.5)
 
 g.set_ylim((0.45, 1.02))

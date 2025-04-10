@@ -446,8 +446,10 @@ for g in gs.axes.ravel():
 mdf = plot_df.copy()
 
 mdf = mdf[(mdf['n_width'] == 1024)]
-sigs = [0, 0.1, 1, 2, 4]
-all_n_dims = [64, 128, 256]
+# sigs = [0, 0.1, 1, 2, 4]
+sigs = [0, 1, 2, 4]
+# all_n_dims = [64, 128, 256]
+all_n_dims = [64]
 
 for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
     cdf = mdf[(mdf['noise'] == sig) & (mdf['n_dims'] == n_dims)]
