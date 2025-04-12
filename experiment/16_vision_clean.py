@@ -369,7 +369,7 @@ for actv in tqdm(layer_names):
 
 # <codecell>
 mdf = plot_df.copy()
-mdf = mdf[mdf['actv'] == 'relu4_1']
+mdf = mdf[mdf['actv'] == 'relu4_3']
 
 g = sns.lineplot(mdf, x='n_classes', y='acc_best', hue='gamma0', marker='o')
 handles, labels = plt.gca().get_legend_handles_labels()

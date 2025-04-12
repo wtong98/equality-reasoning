@@ -343,7 +343,7 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
 plot_df
 
 # %%
-state = plot_df.loc[8]
+state = plot_df.loc[1]
 
 W = state.params['Dense_0']['kernel']
 a = state.params['Dense_1']['kernel'].flatten()
@@ -367,4 +367,4 @@ plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig('fig/ccn/concept/cifar100_rich.svg')
+# plt.savefig('fig/ccn/concept/cifar100_rich.svg')

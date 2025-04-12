@@ -20,7 +20,7 @@ from task.same_different import SameDifferentCifar100
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 12
+run_split = 9
 sleep_delay = True
 
 train_iters = 50_000
@@ -28,16 +28,20 @@ n_hidden = 1024
 
 n_trains = [90]
 log10_gs = [-5, -1, 0]
-base_lr = 1
+base_lr = 0.01
 
 preprocess = [True]
 
-layer_names = ['relu2_1',
-               'relu2_2',
-               'relu3_1',
-               'relu3_2',
-               'relu3_3',
-               'relu4_1',
+# layer_names = ['relu2_1',
+#                'relu2_2',
+#                'relu3_1',
+#                'relu3_2',
+#                'relu3_3',
+#                'relu4_1',
+#                'relu4_2',
+#                'relu4_3']
+
+layer_names = ['relu4_1',
                'relu4_2',
                'relu4_3']
 

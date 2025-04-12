@@ -229,11 +229,11 @@ mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 mdf = mdf.iloc[::-1]
-g = sns.heatmap(mdf, vmax=1, square=False)
+g = sns.heatmap(mdf, square=False)
 g.figure.set_size_inches(3.5, 2.7)
 
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, 20 - 2 * xs + 3, color='black', linestyle='dashed')
+g.plot(xs, 20 - 2 * xs + 0.5, color='black', linestyle='dashed')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
