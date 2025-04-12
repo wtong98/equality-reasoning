@@ -109,7 +109,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_by_l.svg', bbox_inches='tight')
 
 # <codecell>
 mdf = plot_df.copy()
@@ -146,7 +146,7 @@ g.set_xscale('log', base=2)
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 # mdf = plot_df[(plot_df['gamma0'] == 0) | (plot_df['gamma0'] == -2)]
@@ -170,7 +170,7 @@ g.axhline(y=0.5, color='gray', linestyle='dashed')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/sd_rich_dim.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_rich_dim.svg', bbox_inches='tight')
 
 # <codecell>
 mdf = adf[(adf['gamma0'] == -4) & (adf['n_width'] == 1024)]
@@ -192,12 +192,12 @@ g.axhline(y=0.5, color='gray', linestyle='dashed')
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/sd_lazy_dim.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/sd_lazy_dim.svg', bbox_inches='tight')
 
 # <codecell>
 ### LAZY VAR SYMBOLS
-# df = collate_dfs('remote/15_sd_clean/lazy_var_symbols', concat=True)
-df = collate_dfs('remote/15_sd_clean/lazy_test', concat=True)
+df = collate_dfs('remote/15_sd_clean/lazy_var_symbols', concat=True)
+# df = collate_dfs('remote/15_sd_clean/lazy_test', concat=True)
 df
 
 # <codecell>
@@ -233,14 +233,13 @@ g = sns.heatmap(mdf, vmax=1, square=False)
 g.figure.set_size_inches(3.5, 2.7)
 
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, 20 - 2 * xs + 2.2, color='black', linestyle='dashed')
-# g.plot(xs, 10 - 1 * xs + 8, color='black', linestyle='dashed')
+g.plot(xs, 20 - 2 * xs + 3, color='black', linestyle='dashed')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
 
-# g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
-# g.figure.savefig('fig/ccn/lazy_tmp.png')
+g.figure.savefig('fig/ccn/lazy_ndim_v_nsym.svg')
+# g.figure.savefig('fig/lazy_ndim_v_nsym.png', bbox_inches='tight')
 
 # <codecell>
 mdf = plot_df.copy()
@@ -263,7 +262,8 @@ g.plot(xs, 16.5 - 0 * xs, color='black', linestyle='dashed')
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
 
-g.figure.savefig('fig/ccn/rich_ndim_v_nsym.svg')
+# g.figure.savefig('fig/ccn/rich_ndim_v_nsym.svg')
+g.figure.savefig('fig/rich_ndim_v_nsym.png', bbox_inches='tight')
 
 # <codecell>
 ### LAZY VAR WIDTH
@@ -496,8 +496,7 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
     g.figure.tight_layout()
     sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 
-    # plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
-    break
+    plt.savefig(f'fig/ccn/bayes/d_{n_dims}_sig2_{sig}.svg', bbox_inches='tight')
     plt.show()
 
 # <codecell>
@@ -537,7 +536,7 @@ plot_df
 
 # <codecell>
 adf = plot_df[
-    (plot_df['n_dims'] == 512)
+    (plot_df['n_dims'] == 256)
     & (plot_df['n_width'] == 1024)
     ]
 
@@ -581,7 +580,7 @@ g.set_ylabel('Test accuracy')
 
 g.figure.tight_layout()
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/rich.svg', bbox_inches='tight')
 
 
 # <codecell>

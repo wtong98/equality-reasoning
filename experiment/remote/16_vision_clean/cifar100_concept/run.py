@@ -73,9 +73,19 @@ for prep, actv, n_train in itertools.product(preprocess, layer_names, n_trains):
     test_ps = ps[n_train:]
 
     for log10_gamma0 in log10_gs:
+        train_task = SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep, actv_layer=actv, batch_size=1)
+        xs, _ = next(train_task)
+        xs = xs.reshape(1, -1)
+
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
+
+        if log10_gamma0 > -5:
+            gamma0 *= np.sqrt(xs.shape[-1])
+
+        gamma = gamma0 * np.sqrt(xs.shape[-1])   # normalization on input
         lr = gamma0**2 * base_lr
+
+        train_task.batch_size = 128
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True, use_bias=False),
@@ -103,8 +113,8 @@ for case in all_cases:
     case.state = None
 
     # Task vecs take up a lot of memory
-    case.train_task.cifar100 = None
-    case.test_task.cifar100 = None
+    case.train_task = None
+    case.test_task = None
 
     hist_acc = [m.accuracy.item() for m in case.hist['test']]
     case.info['acc_best'] = max(hist_acc)

@@ -96,7 +96,7 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/psvrt_acc_by_l.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/psvrt_acc_by_l.svg', bbox_inches='tight')
 
 # <codecell>
 ### PSVRT
@@ -159,7 +159,7 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# plt.savefig('fig/ccn/psvrt_acc_by_d.svg', bbox_inches='tight')
+plt.savefig('fig/ccn/psvrt_acc_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 ### PENTOMINO
@@ -227,7 +227,7 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# g.figure.savefig('fig/ccn/pentomino_acc_by_l.svg', bbox_inches='tight')
+g.figure.savefig('fig/ccn/pentomino_acc_by_l.svg', bbox_inches='tight')
 
 # <codecell>
 ### PENTOMINO LARGE
@@ -288,7 +288,7 @@ g.set_ylabel('Test accuracy')
 g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
-# plt.savefig('fig/ccn/pentomino_acc_by_d.svg', bbox_inches='tight')
+plt.savefig('fig/ccn/pentomino_acc_by_d.svg', bbox_inches='tight')
 
 # <codecell>
 # CIFAR-100
@@ -348,7 +348,11 @@ for actv in tqdm(layer_names):
 
     for t in g.legend_.get_texts():
         text = t.get_text()
-        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+        val = int(float(text))
+        if val != -5:
+            t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+        else:
+            t.set_text(r'$\gamma \approx 0$')
 
     g.set_xlabel('# classes')
     g.set_ylabel('Test accuracy')
@@ -383,7 +387,11 @@ g.legend_.set_title('')
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+    val = int(float(text))
+    if val != -5:
+        t.set_text('$\gamma = 10^{%s}$' % int(float(text)))
+    else:
+        t.set_text(r'$\gamma \approx 0$')
 
 g.set_xlabel('# classes')
 g.set_ylabel('Test accuracy')
@@ -394,3 +402,4 @@ g.figure.tight_layout()
 
 sns.move_legend(g, loc='upper left', bbox_to_anchor=(1, 1))
 plt.savefig('fig/ccn/cifar100_acc_by_l.svg')
+# plt.savefig('fig/cifar100_acc_by_l.png', bbox_inches='tight')
