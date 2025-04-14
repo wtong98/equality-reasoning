@@ -397,3 +397,7 @@ plot_df
 # <codecell>
 g = sns.lineplot(plot_df, x='gamma0', y='norm_change', hue='n_dims', marker='o')
 g.set_yscale('log')
+
+g.legend().set_title(None)
+g.set_xlabel(r'$\gamma$')
+g.set_ylabel(r'$|\mathbf{\tilde{w}}(t) \cdot \mathbf{x}|$')
