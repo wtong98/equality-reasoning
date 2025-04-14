@@ -19,10 +19,10 @@ print('RUN ID', run_id)
 run_split = 12
 
 train_iters = 25_000
-n_vocab = 16
+n_vocab = [16]
 log10_gs = np.linspace(-5, 0, num=11)
-n_dims = [16, 64, 256, 1024]
-n_widths = [1024]
+n_dims = [128, 256, 512, 1024]
+n_widths = [4096]
 base_lr = 0.1
 
 n_layers = 1
@@ -46,8 +46,7 @@ for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        if log10_gamma0 > -5:
-            gamma0 *= np.sqrt(d)
+        gamma0 *= np.sqrt(d)
 
         gamma = gamma0
         lr = gamma**2 * base_lr

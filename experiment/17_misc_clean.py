@@ -372,3 +372,28 @@ plt.ylim(-1, 1)
 
 plt.tight_layout()
 plt.savefig('fig/ccn/concept/cifar100_lazy.svg')
+
+# <codecell>
+### GAMMA SWEEP
+df = collate_dfs('remote/15_sd_clean/gamma_sweep', show_progress=True)
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    return pd.Series([
+        row['name'],
+        row['train_task'].n_dims,
+        row['info']['norm_change'],
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
+        10**row['info']['log10_gamma0'],
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item()
+    ], index=['name', 'n_dims', 'norm_change', 'gamma0', 'gamma', 'acc_seen', 'acc_unseen'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+g = sns.lineplot(plot_df, x='gamma0', y='norm_change', hue='n_dims', marker='o')
+g.set_yscale('log')
