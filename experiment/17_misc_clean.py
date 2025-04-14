@@ -22,13 +22,13 @@ from task.same_different import *
 set_theme()
 
 # <codecell>
-n_points = 2
-n_dims = 16
+n_points = 16
+n_dims = 128
 n_hidden = 1024
 
-gamma0 = 1
-gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0 * 10
+gamma0 = 1e-5
+gamma = gamma0
+lr = gamma0**2 * 0.1
 
 n_patches = 2
 
@@ -80,7 +80,7 @@ plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
 
 plt.tight_layout()
-plt.savefig('fig/ccn/l2_weight_struct.svg')
+# plt.savefig('fig/ccn/l2_weight_struct.svg')
 
 # note: test acc attained by lazy model is ~0.78
 
@@ -112,7 +112,7 @@ plt.gca().set_axis_off()
 plt.title('Empirical')
 plt.tight_layout()
 
-plt.savefig('fig/ccn/xx_emp.svg')
+# plt.savefig('fig/ccn/xx_emp.svg')
 
 # <codecell>
 plt.gcf().set_size_inches(2, 2)
@@ -342,8 +342,12 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
+# <codecell>
+mdf = plot_df[plot_df['actv'] == 'relu4_3']
+mdf.loc[10]
+
 # %%
-state = plot_df.loc[1]
+state = mdf.loc[0]
 
 W = state.params['Dense_0']['kernel']
 a = state.params['Dense_1']['kernel'].flatten()
@@ -357,14 +361,14 @@ w1, w2 = W_sort[:n_dims], W_sort[n_dims:]
 dots = w1.T @ w2 / (np.linalg.norm(w1, axis=0) * np.linalg.norm(w2, axis=0))
 cos_dists = np.diag(dots)
 
-
 plt.gcf().set_size_inches(3.5, 2.5)
 
-plt.scatter(a[sort_idxs], cos_dists)
+plt.scatter(a[sort_idxs], cos_dists, alpha=0.3)
 plt.xlabel('$a_i$')
 plt.ylabel(r'$(\mathbf{v}_i^1 \cdot \mathbf{v}_i^2)\, / \, \ell_i$')
 plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
+plt.ylim(-1, 1)
 
 plt.tight_layout()
-# plt.savefig('fig/ccn/concept/cifar100_rich.svg')
+plt.savefig('fig/ccn/concept/cifar100_lazy.svg')

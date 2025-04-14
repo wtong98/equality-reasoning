@@ -69,6 +69,8 @@ class MLP(nn.Module):
                             use_bias=self.config.use_bias,
                             name=name)(x)
 
+            self.sow('intermediates', 'actv', x)
+
             if self.config.layer_norm:
                 x = nn.LayerNorm()(x)
 
