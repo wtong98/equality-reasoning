@@ -20,7 +20,7 @@ from task.same_different import SameDifferentCifar100
 run_id = new_seed()
 print('RUN ID', run_id)
 
-run_split = 12
+run_split = 9
 sleep_delay = True
 
 train_iters = 50_000
@@ -28,16 +28,20 @@ n_hidden = 1024
 
 n_trains = [90]
 log10_gs = [-5, -1, 0]
-base_lr = 1
+base_lr = 0.01
 
 preprocess = [True]
 
-layer_names = ['relu2_1',
-               'relu2_2',
-               'relu3_1',
-               'relu3_2',
-               'relu3_3',
-               'relu4_1',
+# layer_names = ['relu2_1',
+#                'relu2_2',
+#                'relu3_1',
+#                'relu3_2',
+#                'relu3_3',
+#                'relu4_1',
+#                'relu4_2',
+#                'relu4_3']
+
+layer_names = ['relu4_1',
                'relu4_2',
                'relu4_3']
 
@@ -73,9 +77,19 @@ for prep, actv, n_train in itertools.product(preprocess, layer_names, n_trains):
     test_ps = ps[n_train:]
 
     for log10_gamma0 in log10_gs:
+        train_task = SameDifferentCifar100(ps=train_ps, preprocess_cnn=prep, actv_layer=actv, batch_size=1)
+        xs, _ = next(train_task)
+        xs = xs.reshape(1, -1)
+
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
+
+        if log10_gamma0 > -5:
+            gamma0 *= np.sqrt(xs.shape[-1])
+
+        gamma = gamma0 * np.sqrt(xs.shape[-1])   # normalization on input
         lr = gamma0**2 * base_lr
+
+        train_task.batch_size = 128
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
             MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, mup_scale=True, use_bias=False),
@@ -103,8 +117,8 @@ for case in all_cases:
     case.state = None
 
     # Task vecs take up a lot of memory
-    case.train_task.cifar100 = None
-    case.test_task.cifar100 = None
+    case.train_task = None
+    case.test_task = None
 
     hist_acc = [m.accuracy.item() for m in case.hist['test']]
     case.info['acc_best'] = max(hist_acc)

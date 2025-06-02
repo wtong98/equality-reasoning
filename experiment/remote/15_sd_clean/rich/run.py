@@ -21,9 +21,9 @@ run_split = 12
 train_iters = 25_000
 n_vocab = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 log10_gs = np.linspace(0, 2, num=6)
-n_dims = [16, 32, 64, 128, 256, 512, 1024]
+n_dims = [128, 256, 512, 1024]
 n_widths = [1024]
-base_lr = 10
+base_lr = 0.1
 
 n_layers = 1
 sig2 = 0
@@ -33,7 +33,7 @@ sig2 = 0
 
 # train_iters = 2500
 # n_vocab = [4]
-# n_dims = [2]
+# n_dims = [16, 32]
 # log10_gs = [0]
 # n_widths = [256]
 ### END TEST CONFIGS
@@ -59,9 +59,9 @@ for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
     # ])
 
     for log10_gamma0 in log10_gs:
-        gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
-        lr = gamma0 * base_lr
+        gamma0 = 10**log10_gamma0 * np.sqrt(d)
+        gamma = gamma0
+        lr = gamma * base_lr
 
         all_cases.append(
             Case(rf'$\gamma=10^{ {log10_gamma0} }$',

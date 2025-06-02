@@ -28,7 +28,7 @@ patch_size = 5
 
 n_trains = [16, 32, 64, 128, 256, 512, 1024, 2048]
 log10_gs = np.linspace(-5, 0, num=6)
-base_lr = 1
+base_lr = 0.5
 
 ### START TEST CONFIGS
 # run_split = 1
@@ -49,23 +49,27 @@ test_tasks = []
 for n_train in n_trains:
     train_set = gen_patches(patch_size, n_examples=n_train)
 
-    all_cases.extend([
-        Case(f'MLP (Adam)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, inc_set=train_set),
-            test_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, batch_size=1024)),
+    # all_cases.extend([
+    #     Case(f'MLP (Adam)', 
+    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, use_bias=False),
+    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+    #         train_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, inc_set=train_set),
+    #         test_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, batch_size=1024)),
 
-        Case(f'MLP (RF)', 
-            MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
-            train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
-            train_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, inc_set=train_set),
-            test_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, batch_size=1024)),
-    ])
+    #     Case(f'MLP (RF)', 
+    #         MlpConfig(n_out=1, n_layers=1, n_hidden=n_hidden, as_rf_model=True, use_bias=False),
+    #         train_args={'train_iters': train_iters, 'test_iters': 1, 'test_every': 1000, 'loss': 'bce'},
+    #         train_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, inc_set=train_set),
+    #         test_task=SameDifferentPsvrt(patch_size=patch_size, n_patches=n_patches, batch_size=1024)),
+    # ])
     
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
+
+        # if log10_gamma0 > -5:
+        #     gamma0 *= n_patches * patch_size
+
+        gamma = gamma0
         lr = gamma0**2 * base_lr
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 

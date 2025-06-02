@@ -18,7 +18,7 @@ import flaxmodels as fm
 
 cache = {}
 
-def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3', sub_samp=1, normalize=True):
+def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3', sub_samp=1, sub_samp_key=None, normalize=True):
     global cache
 
     if seed is None:
@@ -52,7 +52,10 @@ def load_data(preprocess_cnn=True, seed=None, actv_layer='relu5_3', sub_samp=1, 
     if sub_samp < 1:
         data_len = all_data.shape[0]
         sub_len = np.round(sub_samp * data_len).astype(int)
-        sub_samp_idx = np.random.choice(data_len, size=sub_len, replace=False)
+
+        ss_rng = np.random.default_rng(sub_samp_key)
+        sub_samp_idx = ss_rng.choice(data_len, size=sub_len, replace=False)
+
         all_data = all_data[sub_samp_idx]
         all_labs = np.array(all_labs)[sub_samp_idx]
         print(f'info: sub samp data to size={all_data.shape[0]}')

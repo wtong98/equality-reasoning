@@ -23,10 +23,10 @@ run_split = 9
 train_iters = 100_000
 n_hidden = 512
 
-n_trains = [12, 14, 16]
+n_trains = [14, 16]
 n_widths = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 log10_gs = np.linspace(-5, 0, num=6)
-base_lr = 10
+base_lr = 0.5
 blur = 0.5
 test_blur = 0
 random_blur = True
@@ -53,7 +53,11 @@ for n_train, n_width in itertools.product(n_trains, n_widths):
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
+
+        # if log10_gamma0 > -5:
+        #     gamma0 *= 7 * n_width
+
+        gamma = gamma0 
         lr = gamma0**2 * base_lr
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 

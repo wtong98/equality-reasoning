@@ -22,13 +22,13 @@ from task.same_different import *
 set_theme()
 
 # <codecell>
-n_points = 2
-n_dims = 16
+n_points = 16
+n_dims = 128
 n_hidden = 1024
 
-gamma0 = 1
-gamma = gamma0 * np.sqrt(n_hidden)
-lr = gamma0**2 * 10
+gamma0 = 1e-5
+gamma = gamma0
+lr = gamma0**2 * 0.1
 
 n_patches = 2
 
@@ -234,12 +234,12 @@ sort_idxs = np.argsort(a)
 W_sort = W[:,sort_idxs]
 idx = 0
 
-plt.imshow(W_sort[:,idx].reshape(10, 10), vmin=-0.1, vmax=0.1, cmap='viridis')
+plt.imshow(W_sort[:,idx].reshape(10, 10), vmin=-0.1, vmax=0.1,  cmap='bwr')
 plt.axhline(y=4.5, color='white')
 plt.axvline(x=4.5, color='white')
 plt.colorbar()
 
-plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
+plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$', fontsize=20)
 plt.axis('off')
 
 plt.savefig('fig/concept/psvrt_lazy_neg.svg')
@@ -264,7 +264,8 @@ plt.show()
 n_points = 16
 n_hidden = 512
 
-gamma0 = 1e-5
+gamma0 = 1
+# gamma0 = 1e-5
 gamma = gamma0 * np.sqrt(n_hidden)
 lr = gamma0**2 * 10
 
@@ -299,28 +300,28 @@ a = state.params['Dense_1']['kernel'].flatten()
 sort_idxs = np.argsort(a)
 
 W_sort = W[:,sort_idxs]
-idx = 0
+idx = 6
 
-plt.imshow(W_sort[:,idx].reshape(14, 14), vmin=-0.1, vmax=0.1, cmap='viridis')
+plt.imshow(W_sort[:,idx].reshape(14, 14), vmin=-4, vmax=4, cmap='bwr')
 plt.axhline(y=6.5, color='white')
 plt.axvline(x=6.5, color='white')
 plt.colorbar()
 
-plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
+plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$', fontsize=20)
 plt.axis('off')
 
 plt.savefig('fig/concept/pentomino_lazy_neg.svg')
 plt.show()
 
 # <codecell>
-idx = -1
+idx = -9
 
-plt.imshow(W_sort[:,idx].reshape(14, 14), vmin=-0.1, vmax=0.1, cmap='viridis')
+plt.imshow(W_sort[:,idx].reshape(14, 14), vmin=-1, vmax=1, cmap='bwr')
 plt.axhline(y=6.5, color='white')
 plt.axvline(x=6.5, color='white')
 plt.colorbar()
 
-plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$')
+plt.title(f'$a = {a[sort_idxs[idx]]:.2f}$', fontsize=20)
 plt.axis('off')
 
 plt.savefig('fig/concept/pentomino_lazy_pos.svg')
@@ -351,8 +352,12 @@ plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
+# <codecell>
+mdf = plot_df[plot_df['actv'] == 'relu4_3']
+mdf.loc[10]
+
 # %%
-state = plot_df.loc[8]
+state = mdf.loc[0]
 
 W = state.params['Dense_0']['kernel']
 a = state.params['Dense_1']['kernel'].flatten()
@@ -366,15 +371,95 @@ w1, w2 = W_sort[:n_dims], W_sort[n_dims:]
 dots = w1.T @ w2 / (np.linalg.norm(w1, axis=0) * np.linalg.norm(w2, axis=0))
 cos_dists = np.diag(dots)
 
-
 plt.gcf().set_size_inches(3.5, 2.5)
 
-plt.scatter(a[sort_idxs], cos_dists)
+plt.scatter(a[sort_idxs], cos_dists, alpha=0.3)
 plt.xlabel('$a_i$')
 plt.ylabel(r'$(\mathbf{v}_i^1 \cdot \mathbf{v}_i^2)\, / \, \ell_i$')
 plt.gca().spines['top'].set_visible(False)
 plt.gca().spines['right'].set_visible(False)
+plt.ylim(-1, 1)
 
 plt.tight_layout()
 plt.savefig('fig/concept/cifar100_rich.svg')
 plt.show()
+
+# <codecell>
+### GAMMA SWEEP
+df = collate_dfs('remote/15_sd_clean/gamma_sweep', show_progress=True)
+df
+
+# <codecell>
+def extract_plot_vals(row):
+    return pd.Series([
+        row['name'],
+        row['train_task'].n_dims,
+        row['info']['norm_change'] / 0.015,  # normalized by w_0
+        row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
+        10**row['info']['log10_gamma0'],
+        row['info']['acc_seen'].item(),
+        row['info']['acc_unseen'].item(),
+        row['info']['root_d']
+    ], index=['name', 'n_dims', 'norm_change', 'gamma0', 'gamma', 'acc_seen', 'acc_unseen', 'root_d'])
+
+plot_df = df.apply(extract_plot_vals, axis=1) \
+            .reset_index(drop=True)
+plot_df
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[mdf['root_d'] == False]
+
+g = sns.lineplot(mdf, x='gamma0', y='norm_change', hue='n_dims', marker='o')
+g.set_yscale('log')
+g.set_ylim((1e-6, 10))
+
+g.legend().set_title('$d$')
+labs = g.get_xticklabels()
+for text in labs:
+    t = text.get_text()
+    text.set_text('$10^{%s}$' % t)
+
+g.set_xticklabels(labs)
+
+g.set_xlabel(r'$\gamma$')
+g.set_ylabel(r'$|\mathbf{\tilde{w}}(t) \cdot \mathbf{x}|\, / \, |\mathbf{w}(0) \cdot \mathbf{x}|$')
+g.set_title('Without $1 / \sqrt{d}$')
+
+g.figure.set_size_inches(3.5, 2.7)
+
+plt.tight_layout()
+
+sns.move_legend(g, 'lower left', bbox_to_anchor=(1, 0))
+plt.savefig('fig/ccn/no_root_d_scale.svg')
+# plt.savefig('fig/ccn/no_root_d_scale.png', bbox_inches='tight')
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[mdf['root_d'] == True]
+
+g = sns.lineplot(mdf, x='gamma0', y='norm_change', hue='n_dims', marker='o')
+g.set_yscale('log')
+g.set_ylim((1e-6, 10))
+
+g.legend().set_title('$d$')
+
+g.legend().set_title('$d$')
+labs = g.get_xticklabels()
+for text in labs:
+    t = text.get_text()
+    text.set_text('$10^{%s}$' % t)
+
+g.set_xticklabels(labs)
+
+g.set_xlabel(r'$\gamma$')
+g.set_ylabel(r'$|\mathbf{\tilde{w}}(t) \cdot \mathbf{x}|\, / \, |\mathbf{w}(0) \cdot \mathbf{x}|$')
+g.set_title('With $1 / \sqrt{d}$')
+
+g.figure.set_size_inches(3.5, 2.7)
+
+plt.tight_layout()
+sns.move_legend(g, 'lower left', bbox_to_anchor=(1, 0))
+plt.savefig('fig/ccn/root_d_scale.svg', bbox_inches='tight')
+# plt.savefig('fig/ccn/root_d_scale.png', bbox_inches='tight')
+# %%

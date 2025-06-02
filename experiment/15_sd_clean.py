@@ -17,8 +17,8 @@ from common import *
 from train import *
 
 def pred_rich_acc(n_points, a_raw=1.5):
-    a = (a_raw - 1) / (np.sqrt(a_raw**2 + 1))
-    pt = np.sqrt(2 * n_points * (1/2 * n_points - 0.5)) * np.sqrt(2 / (np.pi - 2)) * a
+    prefac = 2 / (13 * (np.pi - 2))
+    pt = np.sqrt(prefac * (n_points**2 - n_points))
     neg_acc = norm.cdf(pt)
     return (neg_acc + 1) / 2
 
@@ -47,7 +47,7 @@ plot_df
 
 # <codecell>
 adf = plot_df[
-    (plot_df['n_dims'] == 512)
+    (plot_df['n_dims'] == 256)
     & (plot_df['n_width'] == 1024)
     ]
 
@@ -82,7 +82,11 @@ for t in g.legend_.get_texts():
     elif 'RF' in text:
         t.set_text('RF')
     elif text != 'Theory':
-        t.set_text(f'$\gamma = {np.round(10**float(text), decimals=2):.2f}$')
+        val = np.round(10**float(text), decimals=2)
+        if val != 0:
+            t.set_text(f'$\gamma = {val:.2f}$')
+        else:
+            t.set_text(r'$\gamma \approx 0.00$')
 
 g.set_xlabel('# symbols ($L$)')
 g.set_ylabel('Test accuracy')
@@ -117,7 +121,11 @@ plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order])
 
 for t in g.legend_.get_texts():
     text = t.get_text()
-    t.set_text(f'$\gamma = {np.round(10**float(text), decimals=2):.2f}$')
+    val = np.round(10**float(text), decimals=2)
+    if val != 0:
+        t.set_text(f'$\gamma = {val:.2f}$')
+    else:
+        t.set_text(r'$\gamma \approx 0.00$')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('Test accuracy')
@@ -132,6 +140,7 @@ plt.show()
 # <codecell>
 ### LAZY VAR SYMBOLS
 df = collate_dfs('remote/15_sd_clean/lazy_var_symbols', concat=True)
+# df = collate_dfs('remote/15_sd_clean/lazy_test', concat=True)
 df
 
 # <codecell>
@@ -163,11 +172,11 @@ mdf = mdf.groupby(['n_symbols', 'n_dims'], as_index=False).mean()
 mdf = mdf.pivot(index='n_symbols', columns='n_dims', values='acc_best')
 
 mdf = mdf.iloc[::-1]
-g = sns.heatmap(mdf, vmin=0.5, vmax=1, square=False)
+g = sns.heatmap(mdf, square=False)
 g.figure.set_size_inches(3.5, 2.7)
 
 xs = 2**np.linspace(-5, 8)
-g.plot(xs, 20 - 2 * xs + 7, color='black', linestyle='dashed')
+g.plot(xs, 20 - 2 * xs + 0.5, color='black', linestyle='dashed')
 
 g.set_xlabel('Input dimension ($d$)')
 g.set_ylabel('# symbols ($L$)')
@@ -255,8 +264,10 @@ df_bayes
 mdf = plot_df.copy()
 
 mdf = mdf[(mdf['n_width'] == 1024)]
-sigs = [0, 0.1, 1, 2, 4]
-all_n_dims = [64, 128, 256]
+# sigs = [0, 0.1, 1, 2, 4]
+sigs = [0, 1, 2, 4]
+# all_n_dims = [64, 128, 256]
+all_n_dims = [64]
 
 for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
     cdf = mdf[(mdf['noise'] == sig) & (mdf['n_dims'] == n_dims)]
@@ -286,7 +297,10 @@ for sig, n_dims in tqdm(list(itertools.product(sigs, all_n_dims))):
         elif 'Mem' in text:
             t.set_text('Bayes mem')
         elif text != 'Theory':
-            t.set_text('$\gamma$ = $10^{%s}$' % text)
+            if float(text[-1]) != 5:
+                t.set_text('$\gamma$ = $10^{%s}$' % text)
+            else:
+                t.set_text(r'$\gamma \approx 0$')
 
     g.figure.set_size_inches(3, 2.6)
     g.figure.tight_layout()
@@ -319,7 +333,7 @@ plot_df
 
 # <codecell>
 adf = plot_df[
-    (plot_df['n_dims'] == 512)
+    (plot_df['n_dims'] == 256)
     & (plot_df['n_width'] == 1024)
     ]
 

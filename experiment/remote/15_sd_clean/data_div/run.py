@@ -23,7 +23,7 @@ n_vocab = 2**np.arange(1, 11)
 log10_gs = np.log10([1e-5, 0.05, 0.1, 0.25, 0.5, 1])
 n_dims = [16, 32, 64, 128, 256, 512, 1024]
 n_widths = [1024]
-base_lr = 10
+base_lr = 0.1
 
 n_layers = 1
 sig2 = 0
@@ -46,8 +46,11 @@ for n_hidden, d, v in itertools.product(n_widths, n_dims, n_vocab):
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
-        lr = gamma0**2 * base_lr
+        if gamma0 > 1e-3:
+            gamma0 *= np.sqrt(d)
+
+        gamma = gamma0
+        lr = gamma**2 * base_lr
 
         all_cases.append(
             Case(rf'$\gamma=10^{ {log10_gamma0} }$',

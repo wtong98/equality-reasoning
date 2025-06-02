@@ -21,9 +21,11 @@ run_split = 12
 train_iters = 25_000
 n_vocab = 2**np.arange(1, 14)
 log10_gs = np.linspace(-5, 0, num=11)
-n_dims = [64, 128, 256]
-base_lr = 10
-sig2s = [0, 0.1, 1, 2, 4]
+# n_dims = [64, 128, 256]
+n_dims = [64]
+base_lr = 0.1
+# sig2s = [0, 0.1, 1, 2, 4]
+sig2s = [0, 1, 2, 4]
 noise_scale = 1
 
 n_layers = 1
@@ -35,7 +37,7 @@ n_widths = [1024]
 # train_iters = 2500
 # n_vocab = [4]
 # n_dims = [2]
-# log10_gs = [0]
+# log10_gs = np.linspace(-5, 0, num=2)
 # sig2s = [0]
 # n_widths = [256]
 ### END TEST CONFIGS
@@ -48,7 +50,10 @@ for d, sig2, n_hidden, v in itertools.product(n_dims, sig2s, n_widths, n_vocab):
     
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
+        if log10_gamma0 > -5:
+            gamma0 *= np.sqrt(d)
+        
+        gamma = gamma0
         lr = gamma0**2 * base_lr
 
         all_cases.append(

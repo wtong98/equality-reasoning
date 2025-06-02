@@ -28,7 +28,7 @@ patch_size = 5
 
 n_trains = [1024]
 log10_gs = np.linspace(-5, 0, num=6)
-base_lr = 1
+base_lr = 0.5
 
 ### START TEST CONFIGS
 # run_split = 1
@@ -51,7 +51,11 @@ for n_train, n_patch in itertools.product(n_trains, n_patches):
 
     for log10_gamma0 in log10_gs:
         gamma0 = 10**log10_gamma0
-        gamma = gamma0 * np.sqrt(n_hidden)
+
+        # if log10_gamma0 > -5:
+        #     gamma0 *= n_patch * patch_size
+
+        gamma = gamma0
         lr = gamma0**2 * base_lr
 
         c = Case(rf'MLP ($\gamma_0=10^{ {log10_gamma0} }$)', 
