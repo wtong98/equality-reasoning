@@ -1,5 +1,5 @@
 # Equality reasoning
-<!-- This repository contains code that reproduces experiments from our paper [MLPs Learn In-Context](https://arxiv.org/abs/2405.15618) TODO: link paper-->
+This repository contains code that reproduces experiments from our paper [Learning richness modulates equality reasoning in neural networks](https://arxiv.org/abs/2503.09781).
 
 ## Installation
 
@@ -21,8 +21,8 @@ Code organization:
 * `experiment/`: experiments and plotting
 * `model/`: model implementations
 * `task/`: task implementations
-* `train`: training routines
-* `common`: shared utilities
+* `train.py`: training routines
+* `common.py`: shared utilities
 
 Experiments are organized per file. For example, `15_sd_clean.py` will plot results on our simple SD tasks. Each experiment file expects results to be present in `experiment/remote`, which contains scripts that generate the results, and are intended to be run on a compute cluster. Running the corresponding `run.py` script for each sub-experiment will generate the corresponding results.
 

@@ -431,8 +431,8 @@ g.figure.set_size_inches(3.5, 2.7)
 plt.tight_layout()
 
 sns.move_legend(g, 'lower left', bbox_to_anchor=(1, 0))
-plt.savefig('fig/ccn/no_root_d_scale.svg')
-# plt.savefig('fig/ccn/no_root_d_scale.png', bbox_inches='tight')
+plt.savefig('fig/no_root_d_scale.svg', bbox_inches='tight')
+plt.show()
 
 # <codecell>
 mdf = plot_df.copy()
@@ -460,6 +460,6 @@ g.figure.set_size_inches(3.5, 2.7)
 
 plt.tight_layout()
 sns.move_legend(g, 'lower left', bbox_to_anchor=(1, 0))
-plt.savefig('fig/ccn/root_d_scale.svg', bbox_inches='tight')
-# plt.savefig('fig/ccn/root_d_scale.png', bbox_inches='tight')
+plt.savefig('fig/root_d_scale.svg', bbox_inches='tight')
+plt.show()
 # %%
