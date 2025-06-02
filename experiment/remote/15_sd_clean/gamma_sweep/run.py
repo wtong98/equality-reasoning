@@ -30,14 +30,14 @@ n_layers = 1
 sig2 = 0
 
 ### START TEST CONFIGS
-# run_split = 1
+run_split = 1
 
-# train_iters = 2500
-# n_vocab = [16]
-# n_dims = [256]
-# log10_gs = [0]
-# n_widths = [1024]
-# include_root_d = [True]
+train_iters = 2
+n_vocab = [16]
+n_dims = [32]
+log10_gs = [0]
+n_widths = [4096]
+include_root_d = [True]
 ### END TEST CONFIGS
 
 all_cases = []
@@ -89,6 +89,11 @@ for case in all_cases:
 
     mean_norm = np.mean(np.abs(actv_aft - actv_for))
 
+# mean_norm = np.mean(np.abs(actv_for))
+# mean_norm
+
+# # <codecell>
+
     case.info['norm_change'] = mean_norm
 
     case.state = None
@@ -102,6 +107,6 @@ for case in all_cases:
 df = pd.DataFrame(all_cases)
 df.to_pickle(f'res.{run_id}.pkl')
 
-print('done!')
+# print('done!')
 
 # %%

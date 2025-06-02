@@ -383,21 +383,72 @@ def extract_plot_vals(row):
     return pd.Series([
         row['name'],
         row['train_task'].n_dims,
-        row['info']['norm_change'],
+        row['info']['norm_change'] / 0.015,  # normalized by w_0
         row['info']['log10_gamma0'] if 'log10_gamma0' in row['info'] else -1,
         10**row['info']['log10_gamma0'],
         row['info']['acc_seen'].item(),
-        row['info']['acc_unseen'].item()
-    ], index=['name', 'n_dims', 'norm_change', 'gamma0', 'gamma', 'acc_seen', 'acc_unseen'])
+        row['info']['acc_unseen'].item(),
+        row['info']['root_d']
+    ], index=['name', 'n_dims', 'norm_change', 'gamma0', 'gamma', 'acc_seen', 'acc_unseen', 'root_d'])
 
 plot_df = df.apply(extract_plot_vals, axis=1) \
             .reset_index(drop=True)
 plot_df
 
 # <codecell>
-g = sns.lineplot(plot_df, x='gamma0', y='norm_change', hue='n_dims', marker='o')
-g.set_yscale('log')
+mdf = plot_df.copy()
+mdf = mdf[mdf['root_d'] == False]
 
-g.legend().set_title(None)
+g = sns.lineplot(mdf, x='gamma0', y='norm_change', hue='n_dims', marker='o')
+g.set_yscale('log')
+g.set_ylim((1e-6, 10))
+
+g.legend().set_title('$d$')
+labs = g.get_xticklabels()
+for text in labs:
+    t = text.get_text()
+    text.set_text('$10^{%s}$' % t)
+
+g.set_xticklabels(labs)
+
 g.set_xlabel(r'$\gamma$')
-g.set_ylabel(r'$|\mathbf{\tilde{w}}(t) \cdot \mathbf{x}|$')
+g.set_ylabel(r'$|\mathbf{\tilde{w}}(t) \cdot \mathbf{x}|\, / \, |\mathbf{w}(0) \cdot \mathbf{x}|$')
+g.set_title('Without $1 / \sqrt{d}$')
+
+g.figure.set_size_inches(3.5, 2.7)
+
+plt.tight_layout()
+
+sns.move_legend(g, 'lower left', bbox_to_anchor=(1, 0))
+plt.savefig('fig/ccn/no_root_d_scale.svg')
+# plt.savefig('fig/ccn/no_root_d_scale.png', bbox_inches='tight')
+
+# <codecell>
+mdf = plot_df.copy()
+mdf = mdf[mdf['root_d'] == True]
+
+g = sns.lineplot(mdf, x='gamma0', y='norm_change', hue='n_dims', marker='o')
+g.set_yscale('log')
+g.set_ylim((1e-6, 10))
+
+g.legend().set_title('$d$')
+
+g.legend().set_title('$d$')
+labs = g.get_xticklabels()
+for text in labs:
+    t = text.get_text()
+    text.set_text('$10^{%s}$' % t)
+
+g.set_xticklabels(labs)
+
+g.set_xlabel(r'$\gamma$')
+g.set_ylabel(r'$|\mathbf{\tilde{w}}(t) \cdot \mathbf{x}|\, / \, |\mathbf{w}(0) \cdot \mathbf{x}|$')
+g.set_title('With $1 / \sqrt{d}$')
+
+g.figure.set_size_inches(3.5, 2.7)
+
+plt.tight_layout()
+sns.move_legend(g, 'lower left', bbox_to_anchor=(1, 0))
+plt.savefig('fig/ccn/root_d_scale.svg', bbox_inches='tight')
+# plt.savefig('fig/ccn/root_d_scale.png', bbox_inches='tight')
+# %%
